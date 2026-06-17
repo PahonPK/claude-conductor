@@ -19,6 +19,7 @@
 - **ก่อน deploy/publish ต้อง validate เสมอ** — ใช้ validate tools, ดู execution log, ทดสอบจริงก่อนบอกว่าเสร็จ
 - **ถ้าไม่แน่ใจ ให้ตรวจซ้ำ** — ดีกว่าบอกว่าถูกแล้วมาพังทีหลัง
 - **Session ยาวใกล้ context เต็ม** → auto-save progress/decisions/pending ลง memory ทันที แล้วแนะนำเปิด session ใหม่
+- **ห้าม over-engineer** — เลือกทางที่ง่ายที่สุดที่ใช้ได้ก่อน · "ทำน้อย" = ลดความซับซ้อนของ *solution* (ตัด speculative feature / premature abstraction / gold-plating) ไม่ใช่ลด rigor — verify/validate/review + quality gate ยังเข้มเต็มเสมอ และของที่ทำต้องถูกครบ · เพิ่ม machinery ใหม่ (hook/daemon/abstraction/ระบบใหม่) เฉพาะเมื่อมีหลักฐานว่าจำเป็นจริง ไม่ใช่เดาว่าจะได้ใช้ (YAGNI) · เจอปัญหาจริงค่อยทำ (เจอ collision จริง → ค่อยทำ guard) ไม่ preemptive · ไม่แน่ใจว่าควรสร้างไหม → ทำน้อยไว้ + เสนอ option ให้ user เลือก ดีกว่าสร้างเผื่อ
 
 ---
 
