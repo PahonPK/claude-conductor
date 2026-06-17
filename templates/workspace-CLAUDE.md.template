@@ -1,0 +1,33 @@
+# CLAUDE.md — <Workspace Display Name> workspace
+
+> Business context for the <name> workspace.
+> Top-level rules live in `~/.claude/CLAUDE.md`. This file is auto-loaded when a
+> topic touches this workspace's trigger keywords.
+
+---
+
+## Identity / Scope
+- **What this workspace covers:** <corporate HQ | brand | separate business | ...>
+- **Voice / tone:** <e.g. professional B2B | playful D2C retail | hospitality warm>
+- **Trigger keywords:** <keyword1>, <keyword2>, ... (must match the row in ~/.claude/CLAUDE.md §Workspace Registry)
+
+## Projects in this workspace
+| Project | Memory file | Status |
+|---|---|---|
+| <Project A> | `~/.claude/projects/C--Users-you/memory/project-<a>.md` | <active/done> |
+| ... | ... | ... |
+
+## Cross-reference rules
+- Inherits from another workspace? → **explicit Read** only (workspaces do NOT
+  auto-inherit). Link the parent workspace CLAUDE.md here if relevant:
+  - e.g. need production/certs context → Read `~/.claude/workspaces/<parent>/CLAUDE.md`
+- <any workspace-specific conventions or constraints>
+
+<!--
+Onboarding a new workspace (per MEMORY_SCHEME.md §Onboarding new workspace):
+1. mkdir ~/.claude/workspaces/<name>/
+2. create this file
+3. add row (+ trigger keywords) ใน ~/.claude/CLAUDE.md §Workspace Registry + Auto-load
+4. add section ใน MEMORY.md
+5. create first project (templates/project-memory.md.template + project-CLAUDE.md.template)
+-->

@@ -1,0 +1,42 @@
+# CLAUDE.md — <Project Name>
+
+> One-line summary of what this project is
+
+---
+
+## Project Overview
+- **Workspace:** <name>
+- **Repo:** <url>
+- **Local path:** <path>
+
+## Tech Stack
+| Layer | Tech |
+|---|---|
+| ... | ... |
+
+## Quality / Code rules
+- (project-specific style + conventions)
+
+## Memory Persistence
+**Memory file:** `~/.claude/projects/C--Users-you/memory/project-<name>.md`
+**Workspace context:** `~/.claude/workspaces/<workspace>/CLAUDE.md`
+
+**Save memory IMMEDIATELY on:**
+- (milestone 1)
+- (milestone 2)
+- ...
+
+**Verify recipe** (run if `Last verified` > 5 days):
+```bash
+# (3-7 read-only commands specific to this project — see MEMORY_SCHEME.md for stack examples)
+```
+
+Manual triggers: `/memory-save` / `/memory-recall`.
+
+<!--
+Required sections (per ~/.claude/CLAUDE.md §Per-project CLAUDE.md):
+1. Stack — language/framework/version
+2. Output / Code / Review rules เฉพาะ project
+3. Stack-specific conventions
+4. Memory Persistence (path + save triggers + verify recipe)
+-->

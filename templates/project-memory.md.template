@@ -1,0 +1,38 @@
+---
+workspace: <acme-corp|acme-snacks|shared>
+name: <Project Display Name>
+description: <one-line summary>
+type: project
+originSessionId: <uuid — first session that created this memory>
+---
+**Last verified:** YYYY-MM-DD
+**Verify rule:** Re-verify if older than 5 days. Recipe in project CLAUDE.md.
+
+## Project: <Project Name>
+
+**Started:** YYYY-MM-DD
+**Local repo:** <path> — <state>
+**Goal:** <one paragraph>
+
+### Current Status (as of YYYY-MM-DD)
+...
+
+### Tech Stack
+...
+
+### Key Architectural Decisions
+...
+
+### Done
+- ✅ <milestone> (date)
+
+### Pending Work
+1. ...
+
+<!--
+Notes:
+- เก็บไฟล์นี้ที่ ~/.claude/projects/C--Users-you/memory/project-<name>.md
+- Size budget: ≤ 20 KB (mega-project ≤ 40 KB) — เกินให้ย้าย history ไป project-<name>-archive.md
+- หลัง create ต้อง: (1) add entry ใน MEMORY.md, (2) add cwd mapping row ใน ~/.claude/CLAUDE.md, (3) create project CLAUDE.md
+- ดู docs/04-onboarding-new-project.md
+-->

@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" PreCompact",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" SessionEnd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" SessionStart",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "skipWorkflowUsageWarning": true
+}
