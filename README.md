@@ -16,6 +16,42 @@ It also routes context to the right business unit (corporate HQ, each brand, eac
 separate business) automatically by keyword/cwd, so multi-workspace setups stay
 isolated.
 
+## How it works
+
+Two flows do most of the work — the orchestrator loop (per task) and multi-session coordination (when you run several at once):
+
+**The orchestrator loop — per task**
+
+```mermaid
+flowchart TD
+    U(["🧑 You — the conductor"])
+    U -->|"1 · talk: scope & goal"| MT["🎭 Main thread<br/>decide + review"]
+    MT -->|"2 · brainstorm, lock plan"| MT
+    MT -->|"3 · confirm — wait for go"| U
+    MT -->|"4 · delegate brief"| AG["🤖 sub-agent<br/>implement"]
+    AG -->|"result"| MT
+    MT -->|"5 · review gate"| G{"review ok?"}
+    G -->|"no — fix"| AG
+    G -->|"yes"| DONE(["✅ report to you"])
+    MT <-->|"verify-before-trust"| MEM[("📓 file memory<br/>checked vs git / build")]
+```
+
+**Multi-session — parallel, no collisions**
+
+```mermaid
+flowchart TD
+    subgraph ONE["one clone — shared git history"]
+        OBJ[("🗄️ object DB:<br/>commits + branches")]
+        BOARD["📋 SESSION-BOARD:<br/>locks · reservations · handoffs"]
+    end
+    SA["🟢 Session A<br/>worktree A"]
+    SB["🟡 Session B<br/>worktree B"]
+    SA -->|"commits on its own branch"| OBJ
+    SB -->|"commits on its own branch"| OBJ
+    SA -.->|"check before touching shared"| BOARD
+    SB -.->|"check before touching shared"| BOARD
+```
+
 This is the **sanitized public framework**. It contains the reusable mechanics only —
 no business data. The maintainer keeps a private instance (with real workspaces and
 project memory); this fork strips all of that out and replaces every concrete example
