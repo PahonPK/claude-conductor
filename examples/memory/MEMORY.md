@@ -33,7 +33,8 @@
 
 ## 📚 Feedback (global lessons — apply ทุก project)
 
-- **Testing Standard** (`feedback-testing-standard.md`) — ห้าม mark auth/login test passed โดยไม่ e2e จริงกับ DB
+- [Testing Standard](./feedback-testing-standard.md) — ห้าม mark auth/login test passed โดยไม่ e2e จริงกับ DB *(sample file included)*
+- [Design Lessons](./feedback-design-lessons.md) — registry ของ root-cause class ที่เกิดซ้ำ; อ่านก่อน design ทุกครั้ง *(sample file included)*
 
 ---
 

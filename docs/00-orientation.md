@@ -1,7 +1,7 @@
 # 00 — Orientation: claude-conductor คืออะไร และเริ่มอ่านตรงไหน
 
 > เอกสารตั้งต้นสำหรับคนที่เพิ่งมาใช้ framework นี้ (หรือ AI session ใหม่)
-> อ่านไฟล์นี้ก่อน แล้วค่อยไล่ตาม `docs/01` → `docs/05` · *Last updated: 2026-10-05*
+> อ่านไฟล์นี้ก่อน แล้วค่อยไล่ตาม `docs/01` → `docs/06` · *Last updated: 2026-10-05*
 >
 > ℹ️ นี่คือ **public framework** (sanitized) — workspace/project ที่ยกตัวอย่างทั้งหมด
 > เป็นของสมมติ (AcmeCorp). เวลานำไปใช้จริง ให้แทนด้วยธุรกิจของคุณเอง
@@ -83,6 +83,7 @@ production/certs) ต้อง **explicit Read** ตาม link ใน brand CLA
 4. **`docs/03-inter-session.md`** — coordinate หลาย session พร้อมกันด้วย SESSION-BOARD.md (+ DEPLOY LOCK, HANDOFF QUEUE, merge hygiene)
 5. **`docs/04-onboarding-new-project.md`** — เพิ่ม project / workspace ใหม่ยังไง
 6. **`docs/05-public-fork-plan.md`** — วิธี sanitize private instance → public fork (meta-doc)
+7. **`docs/06-lessons-learned.md`** — ปัญหาที่เจอจริง → กฎที่ได้ (verification, git/publishing, memory/files, platform gotchas, working style)
 
 แล้วค่อยลงรายละเอียด: `CLAUDE.md` (rules + routing), `MEMORY_SCHEME.md` (templates +
 verify recipes), `templates/` (ไฟล์ตั้งต้น), `examples/` (instance สมมติที่กรอกครบ)
@@ -117,11 +118,12 @@ claude-conductor/
 │   ├── 02-memory-protocol.md
 │   ├── 03-inter-session.md
 │   ├── 04-onboarding-new-project.md
-│   └── 05-public-fork-plan.md
+│   ├── 05-public-fork-plan.md
+│   └── 06-lessons-learned.md
 ├── templates/                     ← reusable templates (project/workspace CLAUDE.md, memory file, verify recipes)
 └── examples/                      ← fictional filled-in instance (AcmeCorp) — copy as a starting point
     ├── workspaces/acme-corp/CLAUDE.md
-    └── memory/{MEMORY.md, project-acme-web.md}
+    └── memory/{MEMORY.md, project-acme-web.md, feedback-testing-standard.md, feedback-design-lessons.md}
 ```
 
 > หมายเหตุ: ใน private instance จริง จะมีโฟลเดอร์ `workspaces/` + `memory/` (Layer 2)

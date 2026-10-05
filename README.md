@@ -119,11 +119,11 @@ claude-conductor/
 ├── commands/                      ← [System] slash-command definitions (/memory-recall, /memory-save)
 ├── hooks/                         ← [System] memory hooks (Node.js): checkpoint + extract + guard (0-byte restore)
 ├── skills/                        ← [System] optional skills: /fable-5 (model routing per phase), /ship (deploy + verify loop)
-├── docs/                          ← documentation, read in order 00 → 05
+├── docs/                          ← documentation, read in order 00 → 06
 ├── templates/                     ← reusable templates (project/workspace CLAUDE.md, memory file, verify recipes)
 └── examples/                      ← a fictional filled-in instance (AcmeCorp) to copy from
     ├── workspaces/acme-corp/CLAUDE.md
-    └── memory/{MEMORY.md, project-acme-web.md}
+    └── memory/{MEMORY.md, project-acme-web.md, feedback-*.md}
 ```
 
 ---
@@ -170,6 +170,7 @@ claude-conductor/
 4. [`docs/03-inter-session.md`](docs/03-inter-session.md) — coordinating parallel sessions (board, deploy lock, handoff queue, merge hygiene)
 5. [`docs/04-onboarding-new-project.md`](docs/04-onboarding-new-project.md) — adding a project/workspace
 6. [`docs/05-public-fork-plan.md`](docs/05-public-fork-plan.md) — how this sanitized fork is produced from a private instance
+7. [`docs/06-lessons-learned.md`](docs/06-lessons-learned.md) — problems hit in real use → the rule each one produced (verification, git & publishing, memory & files, platform gotchas, working style)
 
 ---
 

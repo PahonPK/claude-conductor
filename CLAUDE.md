@@ -22,6 +22,11 @@
 - **ห้าม over-engineer** — เลือกทางง่ายสุดที่ใช้ได้ก่อน · "ทำน้อย" = ลดความซับซ้อนของ *solution* (speculative feature / premature abstraction / gold-plating) ไม่ใช่ลด rigor — verify/validate/review + quality gate ยังเข้มเต็มเสมอ และของที่ทำต้องถูกครบ · machinery ใหม่ (hook/daemon/abstraction/ระบบใหม่) เฉพาะเมื่อมีหลักฐานว่าจำเป็นจริง (YAGNI) ไม่ preemptive — เจอปัญหาจริงค่อยทำ (เจอ collision จริง → ค่อยทำ guard) · ไม่แน่ใจว่าควรสร้างไหม → ทำน้อยไว้ + เสนอ option ให้ user เลือก · **สิ่งที่ห้ามตัดเพื่อความง่าย:** validation ที่ trust boundary · error handling กันข้อมูลหาย · security/RLS · accessibility พื้นฐาน · สิ่งที่ user ขอชัด (user ยืนยันเวอร์ชันเต็ม → ทำ ไม่เถียงซ้ำ)
 - **ก่อนเขียน code ใหม่ ถามตามลำดับ (หยุดที่ขั้นแรกที่พอ):** มีใน codebase แล้วไหม (reuse ก่อน ค้นก่อนเขียน) → DB constraint/RLS/trigger แทน guard ในแอปได้ไหม → stdlib/native platform/dependency ที่มีอยู่ทำได้ไหม → ค่อยเขียนเอง · ladder ย่อ *solution* ไม่ย่อการอ่าน — trace flow จริงทุกไฟล์ที่แตะก่อนเลือกขั้น (diff เล็กที่ผิดที่ = bug ตัวที่สอง)
 - **Bug fix = root cause ไม่ใช่อาการ:** grep ทุก caller ของ function ที่จะแตะ → แก้จุดเดียวที่ทุก caller วิ่งผ่าน ไม่แก้เฉพาะ path ที่ ticket บอก
+- **Test honesty:** feature ที่พึ่ง auth/DB ห้าม mark ผ่านจนกว่า e2e จริงสำเร็จ — รายงาน "verified / not verified" เสมอ (`docs/06` A1)
+- **PR ก่อน merge เสมอ** — ห้าม push ตรงเข้า default branch แม้ self-merge; session ไม่จับ token เอง (`docs/06` B1, B3)
+- **ห้ามข้อมูลลับใน PR/commit/อะไรที่ push ออกไป** — PII, กลไก auth/security, infra/role, ตัวเลขข้อมูลจริง, prod runbook อยู่ใน private memory/spec เท่านั้น (`docs/06` B2)
+- **Memory file ห้าม truncating write** (`open(path,'w')`) — temp file + atomic rename หรือ Write/Edit tool (`docs/06` C1)
+- บทเรียนอื่นจากงานจริง (verification, git, files, platform gotchas, working style) → `~/.claude/docs/06-lessons-learned.md`
 
 ---
 

@@ -65,7 +65,7 @@ workflow เต็ม; งานที่ mechanical / read-only / reversible �
 | Gather (เก็บ fact / probe ตามสูตร) | โมเดลเบา (Sonnet) — ใช้ workhorse เฉพาะต้อง trace code ซับซ้อน | มือเบา |
 | Analyze / architect / plan / go-no-go | โมเดลแพงสุด (Fable 5) — **คิดอย่างเดียว ไม่ลงมือ** | สมอง |
 | Code tier 1 (มี deterministic gate ครอบ) | โมเดลเบา | มือเบา |
-| Code tier 2 (DB function / RLS / money logic / cross-file refactor / ไม่แน่ใจ) | workhorse (Opus 4.8) | มือหนัก |
+| Code tier 2 (DB function / RLS / money logic / cross-file refactor / ไม่แน่ใจ) | workhorse (Opus 5.5) | มือหนัก |
 | Final review (reviewer คนละตัวกับคนเขียน, judge ≥ answerer) | workhorse | มือ reviewer |
 | สื่อสาร / git / PR / deploy ตาม runbook | โมเดลเบา | มือเบา |
 
