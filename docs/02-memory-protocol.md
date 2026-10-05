@@ -72,7 +72,7 @@ Manual triggers:
   รายงานว่ามี HANDOFF ค้างได้ แต่ห้าม fold
 
 Hooks (ไม่ได้แทนการ save เอง — ต้อง save ด้วยตัวเองตาม trigger ข้างบน):
-- `hooks/memory-checkpoint.js` = **audit log เท่านั้น** (เขียน `events.jsonl`) + โหลด memory ตอน SessionStart
+- `hooks/memory-checkpoint.js` = **audit log เท่านั้น** (เขียน `events.jsonl`) + โหลด memory ตอน SessionStart (project memory ตาม cwd + บรรทัด `feedback-*` จาก global `MEMORY.md` — เพราะ Claude Code auto-load `MEMORY.md` เฉพาะ session ที่ cwd = HOME; session ใน project folder จะไม่เห็นบทเรียน global ถ้า hook ไม่ใส่ให้)
 - `hooks/memory-guard.js` = **กัน memory file กลายเป็น 0 byte** — ทุก SessionStart + ทุก
   PostToolUse ของ Write/Edit/Bash: ไฟล์ที่มีเนื้อหา → refresh shadow copy ใน
   `~/.claude/backups/memory-shadow/`; ไฟล์ที่ 0 byte แต่ shadow มีเนื้อหา → restore + log ลง

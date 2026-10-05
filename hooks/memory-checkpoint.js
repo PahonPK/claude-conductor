@@ -115,10 +115,30 @@ function yesterdayDailyPath() {
   return path.join(DAILY_DIR, `${yyyy}-${mm}-${dd}.md`);
 }
 
-function extractLastVerified(headerText) {
-  // Look for "**Last verified:** YYYY-MM-DD" near the top
-  const m = headerText.match(/\*\*Last verified:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/);
+function extractLastVerified(text) {
+  // "**Last verified:** YYYY-MM-DD" — the date may itself be bolded
+  const m = text.match(/\*\*Last verified:\*\*\s*\**([0-9]{4}-[0-9]{2}-[0-9]{2})/);
   return m ? m[1] : null;
+}
+
+// Feedback lessons are indexed in the global MEMORY.md, which Claude Code only
+// auto-loads when the session cwd is HOME — inject them into every other session.
+function feedbackIndexBlock(cwd) {
+  try {
+    if (path.resolve(cwd).toLowerCase() === path.resolve(HOME).toLowerCase()) return "";
+    const lines = fs
+      .readFileSync(path.join(MEMORY_DIR, "MEMORY.md"), "utf8")
+      .split(/\r?\n/)
+      .filter((l) => /\]\(\.\/feedback-[^)]+\.md\)/.test(l));
+    if (!lines.length) return "";
+    return [
+      "",
+      "📚 Feedback lessons (global — apply to every project; files in " + MEMORY_DIR + "):",
+      ...lines,
+    ].join("\n");
+  } catch (_) {
+    return "";
+  }
 }
 
 function spawnExtractor(eventName, inputJsonStr) {
@@ -152,8 +172,7 @@ function handleSessionStart(input) {
   let additionalContext = "";
 
   if (memoryFile && fs.existsSync(memoryFile)) {
-    const headerText = readFirstLines(memoryFile, 80);
-    const lastVerified = extractLastVerified(headerText) || "unknown";
+    const lastVerified = extractLastVerified(readFirstLines(memoryFile, Infinity)) || "unknown";
 
     let stalenessNote = "";
     if (lastVerified !== "unknown") {
@@ -193,6 +212,7 @@ function handleSessionStart(input) {
       "(canonical mapping in ~/.claude/CLAUDE.md → Memory Update Protocol)",
     ].join("\n");
   }
+  additionalContext += feedbackIndexBlock(cwd);
 
   // Emit hookSpecificOutput JSON
   try {
