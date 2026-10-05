@@ -1,7 +1,7 @@
 # 00 — Orientation: claude-conductor คืออะไร และเริ่มอ่านตรงไหน
 
 > เอกสารตั้งต้นสำหรับคนที่เพิ่งมาใช้ framework นี้ (หรือ AI session ใหม่)
-> อ่านไฟล์นี้ก่อน แล้วค่อยไล่ตาม `docs/01` → `docs/05`
+> อ่านไฟล์นี้ก่อน แล้วค่อยไล่ตาม `docs/01` → `docs/05` · *Last updated: 2026-10-05*
 >
 > ℹ️ นี่คือ **public framework** (sanitized) — workspace/project ที่ยกตัวอย่างทั้งหมด
 > เป็นของสมมติ (AcmeCorp). เวลานำไปใช้จริง ให้แทนด้วยธุรกิจของคุณเอง
@@ -28,7 +28,7 @@ docs + ตัวอย่าง** ที่คุณ clone แล้ว fill ด
 
 | Layer | คืออะไร | ตัวอย่างไฟล์ | อยู่ใน repo นี้? |
 |---|---|---|---|
-| **1. System** | กลไก / กฎการทำงานที่ใช้ได้กับใครก็ได้ ไม่ผูกธุรกิจ | `CLAUDE.md` (rules+routing), `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `settings.json` | ✅ ใช่ (นี่คือหัวใจของ framework) |
+| **1. System** | กลไก / กฎการทำงานที่ใช้ได้กับใครก็ได้ ไม่ผูกธุรกิจ | `CLAUDE.md` (rules+routing), `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `skills/`, `settings.json` | ✅ ใช่ (นี่คือหัวใจของ framework) |
 | **2. Knowledge** | business context + project memory เฉพาะของคุณ | `workspaces/*/CLAUDE.md`, `memory/*.md` | ⛔ ไม่ (เป็นข้อมูลส่วนตัว) — ดู `examples/` เป็นตัวอย่าง |
 | **3. Machine-secret** | credentials + runtime state เฉพาะเครื่อง | `.credentials.json`, `settings.local.json`, `sessions/`, `cache/` ฯลฯ | ❌ ไม่ (gitignored, อยู่แค่ `~/.claude`) |
 
@@ -78,9 +78,9 @@ production/certs) ต้อง **explicit Read** ตาม link ใน brand CLA
 ## เริ่มอ่านตรงไหน (reading order)
 
 1. **`docs/00-orientation.md`** ← คุณอยู่ที่นี่ (big picture)
-2. **`docs/01-orchestrator-workflow.md`** — วิธีทำงานบังคับ 5 ขั้น (คุย → brainstorm → confirm → delegate → review)
+2. **`docs/01-orchestrator-workflow.md`** — วิธีทำงานบังคับ 5 ขั้น (คุย → brainstorm → confirm → delegate → review) + variant `/fable-5` / `/ship`
 3. **`docs/02-memory-protocol.md`** — ระบบ memory ทำงานยังไง (path, index, mapping, save triggers, size budgets)
-4. **`docs/03-inter-session.md`** — coordinate หลาย session พร้อมกันด้วย SESSION-BOARD.md
+4. **`docs/03-inter-session.md`** — coordinate หลาย session พร้อมกันด้วย SESSION-BOARD.md (+ DEPLOY LOCK, HANDOFF QUEUE, merge hygiene)
 5. **`docs/04-onboarding-new-project.md`** — เพิ่ม project / workspace ใหม่ยังไง
 6. **`docs/05-public-fork-plan.md`** — วิธี sanitize private instance → public fork (meta-doc)
 
@@ -100,13 +100,17 @@ claude-conductor/
 ├── setup.ps1                      ← installer: copy System layer → ~/.claude + แก้ placeholder
 ├── CLAUDE.md                      ← [System] global rules + workspace registry + cwd mapping (template)
 ├── MEMORY_SCHEME.md               ← [System] memory system reference + templates + verify recipes
-├── settings.json                  ← [System] Claude CLI hooks config (PreCompact/SessionEnd/SessionStart)
+├── settings.json                  ← [System] Claude CLI hooks config (PreCompact/SessionEnd/SessionStart/PostToolUse)
 ├── commands/                      ← [System] slash-command definitions
 │   ├── memory-recall.md
 │   └── memory-save.md
-├── hooks/                         ← [System] memory checkpoint hooks (Node.js)
-│   ├── memory-checkpoint.js
-│   └── memory-extract.js
+├── hooks/                         ← [System] memory hooks (Node.js)
+│   ├── memory-checkpoint.js       ← audit log + โหลด memory ตอน SessionStart
+│   ├── memory-extract.js          ← worker ที่ checkpoint spawn ตอน PreCompact/SessionEnd
+│   └── memory-guard.js            ← shadow copy + restore memory file ที่โดน truncate เหลือ 0 byte
+├── skills/                        ← [System] optional skills
+│   ├── fable-5/SKILL.md           ← ลูปเดิม + route model ต่อ phase (สมอง / มือหนัก / มือเบา)
+│   └── ship/SKILL.md              ← reconcile → build → review → PR → deploy → verify live → housekeep
 ├── docs/                          ← documentation (ไฟล์นี้อยู่ที่นี่)
 │   ├── 00-orientation.md
 │   ├── 01-orchestrator-workflow.md

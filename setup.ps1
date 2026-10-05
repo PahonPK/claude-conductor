@@ -10,10 +10,10 @@
       1. Derives your home-path segment (the "C--Users-<name>" form that Claude
          builds from your home path) from $env:USERPROFILE - nothing is hardcoded.
       2. Copies the System layer (CLAUDE.md, MEMORY_SCHEME.md, settings.json,
-         commands/, hooks/, templates/, docs/) into ~/.claude/.
+         commands/, hooks/, skills/, templates/, docs/) into ~/.claude/.
       3. Substitutes <YOUR_HOME> in the copied settings.json and replaces the
          "C--Users-you" placeholder segment in the copied hooks/memory-checkpoint.js
-         with your real segment.
+         and hooks/memory-guard.js with your real segment.
 
     SAFETY:
       - Prints a dry-run summary of every action and asks for confirmation before
@@ -86,13 +86,18 @@ $SystemLayer = @(
     "settings.json",
     "commands",
     "hooks",
+    "skills",
     "templates",
     "docs"
 )
 
 # Files in the destination that get placeholder substitution after copy.
 $SettingsRel = "settings.json"
-$HookRel     = Join-Path "hooks" "memory-checkpoint.js"
+# Every hook that hardcodes the C--Users-you memory path.
+$HookRels    = @(
+    (Join-Path "hooks" "memory-checkpoint.js"),
+    (Join-Path "hooks" "memory-guard.js")
+)
 
 $Stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
@@ -166,7 +171,9 @@ if ($skips.Count -gt 0) {
 Write-Host ""
 Write-Host ("After copy, placeholders will be fixed in:") -ForegroundColor Yellow
 Write-Host ("  - {0}: <YOUR_HOME> -> {1}" -f $SettingsRel, $HomePath)
-Write-Host ("  - {0}: 'C--Users-you' -> '{1}'" -f $HookRel, $HomeSegment)
+foreach ($h in $HookRels) {
+    Write-Host ("  - {0}: 'C--Users-you' -> '{1}'" -f $h, $HomeSegment)
+}
 Write-Host ""
 
 # --- Confirm ---------------------------------------------------------------
@@ -235,9 +242,11 @@ Write-Host "Fixing placeholders:" -ForegroundColor Cyan
 $dstSettings = Join-Path $ClaudeHome $SettingsRel
 Set-Placeholder -DstFile $dstSettings -Find "<YOUR_HOME>" -Replace $HomePath -Label "settings.json"
 
-# hooks/memory-checkpoint.js: C--Users-you -> real home segment.
-$dstHook = Join-Path $ClaudeHome $HookRel
-Set-Placeholder -DstFile $dstHook -Find "C--Users-you" -Replace $HomeSegment -Label "memory-checkpoint.js"
+# hooks/*.js: C--Users-you -> real home segment.
+foreach ($h in $HookRels) {
+    $dstHook = Join-Path $ClaudeHome $h
+    Set-Placeholder -DstFile $dstHook -Find "C--Users-you" -Replace $HomeSegment -Label (Split-Path -Leaf $h)
+}
 
 Write-Host ""
 Write-Host "Done. Next steps:" -ForegroundColor Cyan

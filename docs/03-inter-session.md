@@ -2,6 +2,10 @@
 
 > Source: §Inter-session Coordination ใน `../CLAUDE.md`
 > ใช้เฉพาะตอนมีหลาย session ทำงาน**คู่ขนาน**บน project เดียวกัน
+>
+> `CLAUDE.md` เก็บแค่ **กฎ** (rules-only, โหลดทุก session) — เอกสารนี้คือ **เหตุผล + ตัวอย่าง +
+> incident** เบื้องหลังกฎเหล่านั้น อ่านเมื่อกฎดูไม่มีเหตุผล หรือเจอ edge case ที่กฎไม่ครอบ
+> *(Last updated: 2026-10-05)*
 
 ---
 
@@ -22,9 +26,10 @@ session แรก**หายไปจากหน้าโต๊ะ** (แต่
 
 ---
 
-## โมเดล: ของ share กัน 4 อย่าง แต่ละอย่างมี "ผู้ดูแล" คนเดียว
+## โมเดล: ของ share กัน 4 (+1) อย่าง แต่ละอย่างมี "ผู้ดูแล" คนเดียว
 
-คิดเหมือนออฟฟิศที่หลายคนทำงานพร้อมกัน — มีของกลาง 4 ชิ้น:
+คิดเหมือนออฟฟิศที่หลายคนทำงานพร้อมกัน — มีของกลาง 4 ชิ้น (ชิ้นที่ 5 เพิ่มทีหลังเมื่อมี
+deploy target ที่ share กัน):
 
 | ของกลาง (analogy) | ความเสี่ยง | ผู้ดูแล / วิธีกัน |
 |---|---|---|
@@ -32,6 +37,7 @@ session แรก**หายไปจากหน้าโต๊ะ** (แต่
 | 🗄️ **Git history** (ตู้เอกสารกลาง) | checkout ทับ HEAD เพื่อน | append-only + วินัย ref (อ่านด้วย `git show`, เผยแพร่ด้วย `push`) |
 | 🧱 **DB / live schema** (ไวต์บอร์ดผนัง) | จอง timestamp ชน / replace function ทับ guard | board reservation + **look-before-replace** |
 | 📓 **Project state** (สมุดจดกลาง) | จำสถานะไม่ตรงกัน | project memory (MEMORY.md + project-*.md) — เหมือนเดิม |
+| 🚦 **Deploy target ที่ share กัน** (ตู้ที่กำลังใช้งานจริง) | 2 session rebuild container เดียวกันพร้อมกัน | **DEPLOY LOCK** บน board (ดูข้อ 5) |
 
 ---
 
@@ -104,10 +110,33 @@ DB เป็นไวต์บอร์ดบนผนัง — ทุก sessi
   ที่ share กัน → **เปิดดู definition จริงบน live DB ก่อน** อย่า overwrite มืด ๆ
   (กันเคส guard เก่าใน DB แต่ไม่ติดบน git ref → ถูกทับหายเงียบ ๆ)
 
+**ทำไมต้อง look before replace:** guard ที่อยู่แค่ใน live DB ไม่ติดบน git ref ใด ๆ เลย —
+replace function ทับแบบมืด ๆ = ลบมันทิ้งโดยไม่มี diff ไม่มี PR ไม่มีร่องรอย. การอ่าน definition
+จริงก่อน = code review สำหรับ object ที่ git มองไม่เห็น
+
 ## 4) 📓 Project state → memory เหมือนเดิม
 
 สมุดจดกลาง = `MEMORY.md` + `project-*.md` ตาม Memory Protocol (ดูเอกสาร 02)
-ไม่มีอะไรเปลี่ยน
+— ถ้า session หนึ่งเปลี่ยน fact ของ project ที่ตัวเองไม่ได้ owns → ส่งผ่าน **HANDOFF QUEUE**
+(ดูหัวข้อ board ด้านล่าง) ไม่เขียนทับไฟล์ของคนอื่นตรง ๆ
+
+## 5) 🚦 Deploy target ที่ share กัน → DEPLOY LOCK
+
+**Incident (เกิดจริงใน private instance):** 2 session rebuild frontend container ตัวเดียวกันบน
+server พร้อมกัน — คำสั่ง recreate ของ session ที่สองชน **"name already in use"**, container
+ไม่กลับขึ้นมา และเว็บ prod ตอบ **502** จนมีคนสังเกตเห็น. ชื่อ container เดียว = rebuild ได้
+ทีละครั้ง → mutex คือ §DEPLOY LOCK บน board
+
+| กฎ | ทำไม |
+|---|---|
+| ก่อน build/up container ที่ share → เช็ค §DEPLOY LOCK; ACTIVE ว่าง → ใส่ตัวเองเป็น ACTIVE แล้ว deploy | 1 container = 1 rebuild ต่อครั้ง |
+| มี ACTIVE อยู่ → **ห้าม deploy**, เพิ่มตัวเองใน WAITING | กัน race ข้างบน |
+| **Piggyback:** ACTIVE pull default branch ล่าสุดก่อน build → ทุก PR ที่ merge แล้วขึ้น live ใน image เดียว; WAITING ที่ commit อยู่ใน image แล้ว → ลบ row ตัวเองได้เลย | rebuild ซ้ำ = วิ่ง race ใหม่โดยไม่ได้อะไร — WAITING ส่วนใหญ่จึงเป็น no-op |
+| health check ผ่าน (app ตอบแล้ว เช่น `curl` ได้ redirect/200) → **ลบ ACTIVE row ทันที** | lock ค้าง = บล็อกคนอื่นฟรี ๆ |
+| ACTIVE row ค้าง > 15 นาที → verify (container status / health check) ก่อน steal | row เก่าขนาดนี้น่าจะเป็น session ที่ตายแล้ว มากกว่า build ที่ช้า |
+| lock คุมแค่ container rebuild — migration ยังจองผ่าน §RESERVATIONS | คนละ resource |
+
+> ไม่มี deploy target ที่หลาย session ใช้ร่วมกัน (เช่น deploy ผ่าน CI/hosting ที่ queue ให้อยู่แล้ว) → ไม่ต้องมี section นี้
 
 ---
 
@@ -118,18 +147,21 @@ board กลาง (`~/.claude/projects/C--Users-you/memory/SESSION-BOARD.md`) �
 
 > **ไม่ auto-load** — อ่านเฉพาะตอนงานแตะ multi-session project
 
-### โครงสร้าง board (5 ส่วน)
+### โครงสร้าง board (6 ส่วน)
 
 | ส่วน | เก็บอะไร |
 |---|---|
 | **IN-FLIGHT** | งานที่กำลังทำอยู่ (owner + วันที่) — = **lock** |
 | **RESERVATIONS** | resource ที่จองไว้ (migration timestamp, branch) |
-| **HANDOFF** | งานส่งต่อระหว่าง session |
+| **DEPLOY LOCK** | ACTIVE (ใครกำลัง rebuild container ที่ share) + WAITING — ดูข้อ 5 |
+| **HANDOFF QUEUE** | fact ที่ session หนึ่งเปลี่ยน แต่ไฟล์ canonical เป็นของ project อื่น — รอ fold |
 | **CONTRACTS** | ข้อตกลง interface/contract ระหว่าง session (เช่น schema ที่ตกลงร่วมกัน) |
 | **MESSAGES** | ข้อความฝากถึง session อื่น |
 
-> Board เก็บแค่ coordination state ชั่วคราว — **ไม่เก็บ permanent state ซ้ำ**
-> (state ถาวรไปอยู่ `MEMORY.md` / project file)
+> **Board = lock + intent + handoff เท่านั้น — ไม่ใช่ที่เก็บ state.** ห้ามเขียน completion
+> narrative ("P2 DONE merged verified …") ลง board: พอ fact อยู่ 2 ที่ มันจะ drift ออกจากกัน —
+> และ board ถูก prune ทุก 3 วันแต่ canonical file ไม่ถูก ดังนั้นสำเนาที่รอดคือสำเนาที่ผิด.
+> state ถาวรไปอยู่ `MEMORY.md` / `project-*.md` เท่านั้น
 
 ### When to read / lock / release
 
@@ -148,19 +180,65 @@ branch / shared file·table·RLS / shared DB function):
 - จำเป็นต้องแตะจริง ๆ → ฝากไว้ใน **MESSAGES** อย่าลุยทับ
 
 **เสร็จงาน:**
+- งานแตะ fact ของ project ที่ session นี้ไม่ได้ owns → เขียน **HANDOFF QUEUE** 1 บรรทัด **ก่อน**ลบ IN-FLIGHT (ดูด้านล่าง)
 - ลบ IN-FLIGHT row + ปล่อย reservation **ทันที**
 - ย้าย state ถาวรไป `MEMORY.md` / project file (board ไม่เก็บซ้ำ)
+
+### HANDOFF QUEUE — รูปแบบ + กฎ fold
+
+session ที่เปลี่ยน fact ของ project ที่ตัวเองไม่ได้ owns ต้องทิ้ง fact ไว้ก่อนปล่อย lock:
+
+```
+-> <target-file> :: <fact sentence, not a resource label>  [from <session> <date>]
+-> project-acme-erp.md :: migration add_invoice_status applied on prod; old status column dropped  [from web-session 2026-10-01]
+```
+
+- ต้องเป็น **fact** ("column เก่าถูก drop แล้ว") ไม่ใช่ **resource label** ("แตะ table invoices")
+  — เจ้าของไฟล์ต้อง fold ได้โดยไม่ต้องเดา
+- เพราะเป็น durable delta → §HANDOFF QUEUE **ยกเว้นกฎ prune 3 วัน + ไม่นับใน 6 KB budget**
+  (GC ห้ามกินมัน); entry > 14 วัน = ไม่มีใคร save ไฟล์นั้นมา 2 สัปดาห์ → **flag ให้ user** อย่าลบ
+- **fold บน `memory-save` เท่านั้น (write op) — ห้าม fold ตอน `memory-recall`** (recall = pure
+  read; ถ้า recall ต้อง drain ก็จะกลายเป็น write ที่ไม่ผ่าน review). recall แค่รายงานว่ามี delta ค้าง
+- drain แบบ ambient: session ไหนก็ได้ที่ save ไฟล์ X → drain ทุกบรรทัดที่ target = X
+- **delete-iff-folded:** ลบบรรทัด HANDOFF ได้เฉพาะใน **edit เดียวกัน** กับที่เขียน fact เข้า
+  canonical body. ถ้าแยก 2 จังหวะแล้ว crash ตรงกลาง: ลบก่อน fold = fact หายจากทั้ง 2 ที่
+  (partial fold); fold แล้วไม่ลบ = save ครั้งหน้า fold ซ้ำ (double drain → ข้อความซ้ำ/ขัดกัน).
+  ทำใน edit เดียว = idempotent — บรรทัดยังอยู่ให้ fold หรือ fold ไปแล้วอย่างใดอย่างหนึ่ง
 
 ### Stale-row rules (กัน lock ค้าง)
 
 - Row ค้าง **> 3 วัน** ไม่มี update = **ต้องสงสัย** ว่า lock จริงหรือลืมปล่อย
   → verify ก่อนเชื่อ (อย่าถือว่าเป็น lock จริงอัตโนมัติ)
 - **Prune** row เก่าทุกครั้งที่เปิด board
-- **Budget ≤ 6 KB** — board ต้องเล็ก อ่านเร็ว
+- **Budget ≤ 6 KB** — board ต้องเล็ก อ่านเร็ว (ยกเว้น §HANDOFF QUEUE — ดูข้างบน)
 
 ---
 
-## ถ้ายังชนกันบ่อย (optional)
+## Merge hygiene สำหรับ repo ที่หลาย session ทำคู่ขนาน
+
+worktree กันชนตอน *ทำงาน* — แต่ตอน *merge* หลาย PR ที่แตกจาก base เดียวกันยังชนกันได้.
+บทเรียนจากการ audit conflict จริง (ส่วนใหญ่มาจาก "registry บรรทัดเดียวที่ทุก PR append"):
+
+- **ไฟล์ derived/generated ห้าม hand-merge** — regenerate จาก source หลัง merge แล้ว commit ผล
+  (lockfile, generated types, pin/snapshot file ฯลฯ). ถ้าไฟล์ generated เองติด conflict → เอาฝั่ง
+  base ก่อน แล้วค่อย regenerate (tool ส่วนใหญ่อ่าน conflict marker ไม่ได้). ไฟล์ที่ต้องรวมทั้งสองฝั่ง
+  (เช่น type definitions) → เก็บ addition ของทั้งสองฝั่ง แล้วพิสูจน์ด้วย type-check
+- **ตรวจหลัง merge ว่าไม่มี 2 PR redefine ของชิ้นเดียวกัน** (เช่น DB function เดียวกันถูก replace
+  ใน 2 migration) — ถ้ามี = หยุดและ reconcile ก่อน ไม่ใช่ปล่อย "ตัวหลังชนะ"
+- **Sibling PRs merge ตามลำดับ apply** — แต่ละ PR stack บน head ที่ resolve แล้วของ PR ก่อนหน้า
+  (ไม่ resolve conflict เดิมซ้ำ 2 รอบ)
+- **merge base branch เข้า branch ตัวเองก่อนเปิด PR** และพยายาม merge ภายใน ~3 วันหลังแตก branch
+- **ไม่มี PR ไหน append ลง shared single-line registry** (เช่น บรรทัด `"test": "a && b && c"` ที่ทุก PR
+  ต่อท้าย) — ให้ **derive** แทน (เช่น test runner ที่ discover ไฟล์ `*.test.*` เอง) แล้ว PR แค่เพิ่มไฟล์
+- เพิ่ม gate ใหม่ = เพิ่มไฟล์ที่ถูก discover อัตโนมัติ ไม่ใช่แก้ list กลาง; legacy exemption list ให้
+  freeze — ไฟล์ใหม่ที่ไม่ผ่าน gate = แก้ไฟล์ ไม่ใช่เพิ่ม exemption
+
+> ใส่เป็น section `## Merge hygiene` ใน project `CLAUDE.md` (ดู `templates/project-CLAUDE.md.template`)
+> แล้วแทนด้วยชื่อไฟล์/คำสั่งจริงของ project
+
+---
+
+## ถ้ายังชนกันบ่อย (optional — ตั้งใจไม่สร้าง)
 
 กฎเขียน + นิสัย worktree ข้างบน**พอแล้ว**สำหรับ scale ปกติ — ยังไม่ต้องมี
 enforcement daemon / heartbeat GC / migration ledger. ถ้าในอนาคตยังชนกันบ่อยจริง

@@ -12,7 +12,7 @@
 1. CREATE memory file:
    ~/.claude/projects/C--Users-you/memory/project-<name>.md
    ↳ frontmatter (workspace / name / description / type / originSessionId)
-   ↳ + Last verified date + Verify rule pointer
+   ↳ + Last verified: <date> @ <commit> + Verify rule pointer
    ↳ + sections: Current Status / Tech Stack / Key Decisions / Done / Pending
    → ใช้ templates/project-memory.md.template
 
@@ -34,6 +34,10 @@
 3. **Stack-specific conventions**
 4. **Memory Persistence** (บังคับ) — memory file path + save triggers +
    **verify recipe** (3–7 read-only commands ที่ใช้ตรวจ memory เทียบ reality)
+
+*(optional)* **Merge hygiene** — ถ้า repo มีหลาย session/PR ทำคู่ขนาน ใส่กฎ merge ของ project
+(ไฟล์ generated ห้าม hand-merge, ลำดับ merge sibling PR, ห้าม append shared registry) —
+หลักการอยู่ใน `docs/03-inter-session.md` §Merge hygiene, โครงอยู่ใน `templates/project-CLAUDE.md.template`
 
 ---
 

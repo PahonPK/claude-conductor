@@ -5,7 +5,7 @@ description: EXAMPLE (fictional) — brand site for Acme Snacks; 12 products + b
 type: project
 originSessionId: 00000000-0000-0000-0000-000000000000
 ---
-**Last verified:** YYYY-MM-DD
+**Last verified:** YYYY-MM-DD @ <commit>
 **Verify rule:** Re-verify if older than 5 days. Recipe in project CLAUDE.md.
 
 ## Project: Acme Snacks Website

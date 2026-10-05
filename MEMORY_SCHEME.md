@@ -19,7 +19,7 @@
 ~/.claude/
 ├── CLAUDE.md                          ← thin router: rules + workspace registry + cwd mapping
 ├── MEMORY_SCHEME.md                   ← ไฟล์นี้ (reference / audit / templates)
-├── backups/                           ← backup ของ CLAUDE.md ก่อน refactor
+├── backups/                           ← backup ของ CLAUDE.md ก่อน refactor + memory-shadow/ (จาก memory-guard)
 ├── workspaces/                        ← business workspace context (ตัวอย่างสมมติด้านล่าง)
 │   ├── acme-corp/CLAUDE.md            ← Corporate HQ / ERP / Operations / B2B
 │   └── acme-snacks/CLAUDE.md          ← Brand: consumer snack, retail D2C
@@ -29,7 +29,10 @@
 │   ├── project-*.md                   ← per-project memory files (frontmatter has `workspace:`)
 │   ├── feedback-*.md                  ← global lessons
 │   └── user-system-info.md
-└── hooks/memory-checkpoint.js         ← audit-only hook
+├── skills/                            ← optional: fable-5/ (model routing), ship/ (deploy + verify loop)
+└── hooks/
+    ├── memory-checkpoint.js           ← audit-only hook (+ SessionStart memory load)
+    └── memory-guard.js                ← restore memory file ที่โดน truncate เหลือ 0 byte
 ```
 
 ---
@@ -76,7 +79,7 @@ Legend: ✅ done / ⚠️ partial / ❌ missing / 🔵 N/A
 1. CREATE memory file:
    ~/.claude/projects/C--Users-you/memory/project-<name>.md
    ↳ frontmatter (see template below)
-   ↳ + Last verified date + Verify rule pointer
+   ↳ + Last verified: <date> @ <commit> + Verify rule pointer
    ↳ + sections: Current Status / Tech Stack / Key Decisions / Done / Pending
 
 2. ADD to MEMORY.md (under correct workspace group)
@@ -118,7 +121,7 @@ description: <one-line summary>
 type: project
 originSessionId: <uuid — first session that created this memory>
 ---
-**Last verified:** YYYY-MM-DD
+**Last verified:** YYYY-MM-DD @ <commit>
 **Verify rule:** Re-verify if older than 5 days. Recipe in project CLAUDE.md.
 
 ## Project: <Project Name>
@@ -238,9 +241,9 @@ curl -sI https://<domain>/sitemap.xml | head -3
 |---|---|
 | Every session start | Auto-load workspace CLAUDE.md (per cwd / topic mention) |
 | Every milestone | Update project memory + MEMORY.md one-liner |
-| Every 5-7 days | If `Last verified` stale → run project's verify recipe before trusting |
+| Every 5-7 days | If `Last verified` stale (date > 5 days, or its commit ≠ HEAD) → run project's verify recipe before trusting |
 | Every quarter | Run `/consolidate-memory` — merge duplicates, fix stale facts, prune index |
-| Multi-session work | Update `SESSION-BOARD.md` on claim/finish; prune stale IN-FLIGHT rows (>3 วัน) — see CLAUDE.md §Inter-session Coordination |
+| Multi-session work | Update `SESSION-BOARD.md` on claim/finish; prune stale IN-FLIGHT rows (>3 วัน; §HANDOFF QUEUE exempt — fold on `/memory-save`) — see CLAUDE.md §Inter-session Coordination |
 | Before major refactor | Backup `~/.claude/CLAUDE.md` to `~/.claude/backups/CLAUDE-pre-<change>-YYYY-MM-DD.md` |
 
 ---
@@ -255,4 +258,4 @@ curl -sI https://<domain>/sitemap.xml | head -3
 
 ---
 
-*Template for the public claude-conductor. Replace the AcmeCorp examples with your own.*
+*Template for the public claude-conductor. Replace the AcmeCorp examples with your own. · Last updated: 2026-10-05*

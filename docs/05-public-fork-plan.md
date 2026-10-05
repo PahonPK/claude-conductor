@@ -20,7 +20,8 @@
 ## (a) เลือกอะไรเข้า / ตัดอะไรออก
 
 **เก็บ (include) — Layer 1 + docs + templates:**
-- `CLAUDE.md` (genericized), `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `settings.json`
+- `CLAUDE.md` (genericized), `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `skills/`, `settings.json`
+  (skill ที่ผูกกับ domain ธุรกิจ → genericize ด้วย `{{PLACEHOLDER}}` ได้ค่อยเข้า ไม่งั้นตัดทิ้ง)
 - `docs/` ทั้งหมด (genericize ตัวอย่างที่อ้างธุรกิจจริง)
 - `templates/` ทั้งหมด
 - `examples/` (สร้างใหม่ — instance สมมติที่กรอกครบ)

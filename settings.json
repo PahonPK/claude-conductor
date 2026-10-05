@@ -32,6 +32,23 @@
             "type": "command",
             "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" SessionStart",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-guard.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-guard.js\"",
+            "timeout": 10
           }
         ]
       }
