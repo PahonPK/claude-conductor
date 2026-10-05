@@ -70,7 +70,7 @@ with a fictional one (`AcmeCorp`, `example.com`, placeholders).
 
 Try the framework on your machine (Windows/PowerShell shown; the System layer is the
 reusable Layer 1 — `CLAUDE.md`, `MEMORY_SCHEME.md`, `settings.json`, `commands/`,
-`hooks/`, `templates/`, `docs/`):
+`hooks/`, `skills/`, `templates/`, `docs/`):
 
 ```powershell
 git clone <this-repo-url> claude-conductor
@@ -79,7 +79,8 @@ cd claude-conductor
 ```
 
 `setup.ps1` derives your home-path segment automatically, substitutes the
-`<YOUR_HOME>` / `C--Users-you` placeholders, and copies the System layer into
+`<YOUR_HOME>` / `C--Users-you` placeholders (in `settings.json` and every hook that
+hardcodes the memory path), and copies the System layer into
 `~/.claude/` (it backs up or skips anything that already exists). Then start a new
 Claude Code session — the SessionStart hook loads matching project memory.
 
@@ -94,7 +95,7 @@ The system separates content by how portable and how sensitive it is:
 
 | Layer | What | In this public repo? |
 |---|---|---|
-| **1. System** | Mechanics / rules that work for anyone, not tied to a business | ✅ `CLAUDE.md`, `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `settings.json` |
+| **1. System** | Mechanics / rules that work for anyone, not tied to a business | ✅ `CLAUDE.md`, `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `skills/`, `settings.json` |
 | **2. Knowledge** | *Your* business context + project memory | ❌ not included — you create it from `templates/` (see `examples/` for the shape) |
 | **3. Machine-secret** | Credentials + per-machine runtime state | ❌ gitignored, lives only in `~/.claude` (see `.env.example`) |
 
@@ -114,14 +115,15 @@ claude-conductor/
 ├── setup.ps1                      ← installer: copies System layer into ~/.claude + fixes placeholders
 ├── CLAUDE.md                      ← [System] global rules + workspace registry + cwd mapping (template)
 ├── MEMORY_SCHEME.md               ← [System] memory system reference + templates + verify recipes
-├── settings.json                  ← [System] Claude CLI hooks (PreCompact / SessionEnd / SessionStart)
+├── settings.json                  ← [System] Claude CLI hooks (PreCompact / SessionEnd / SessionStart / PostToolUse)
 ├── commands/                      ← [System] slash-command definitions (/memory-recall, /memory-save)
-├── hooks/                         ← [System] memory checkpoint hooks (Node.js)
-├── docs/                          ← documentation, read in order 00 → 05
+├── hooks/                         ← [System] memory hooks (Node.js): checkpoint + extract + guard (0-byte restore)
+├── skills/                        ← [System] optional skills: /fable-5 (model routing per phase), /ship (deploy + verify loop)
+├── docs/                          ← documentation, read in order 00 → 06
 ├── templates/                     ← reusable templates (project/workspace CLAUDE.md, memory file, verify recipes)
 └── examples/                      ← a fictional filled-in instance (AcmeCorp) to copy from
     ├── workspaces/acme-corp/CLAUDE.md
-    └── memory/{MEMORY.md, project-acme-web.md}
+    └── memory/{MEMORY.md, project-acme-web.md, feedback-*.md}
 ```
 
 ---
@@ -129,9 +131,9 @@ claude-conductor/
 ## How to adopt it for your business
 
 1. **Clone / copy** the System layer into your Claude config dir:
-   - Put `CLAUDE.md`, `MEMORY_SCHEME.md`, `settings.json`, `commands/`, `hooks/` under `~/.claude/`.
+   - Put `CLAUDE.md`, `MEMORY_SCHEME.md`, `settings.json`, `commands/`, `hooks/`, `skills/` under `~/.claude/`.
 2. **Fix the machine-specific bits:**
-   - In `hooks/memory-checkpoint.js` and the `~/.claude/projects/...` paths, replace the
+   - In `hooks/memory-checkpoint.js`, `hooks/memory-guard.js` and the `~/.claude/projects/...` paths, replace the
      `C--Users-you` segment with the one derived from *your* home path (Claude turns
      `C:\Users\alice` into `C--Users-alice`).
    - In `settings.json`, replace `<YOUR_HOME>` in the hook commands with your real home path.
@@ -163,8 +165,13 @@ claude-conductor/
 ## Where to go next
 
 1. [`docs/00-orientation.md`](docs/00-orientation.md) — big picture, the 3-layer model, example workspaces/projects
-2. [`docs/01-orchestrator-workflow.md`](docs/01-orchestrator-workflow.md) — the mandatory 5-step way of working
+2. [`docs/01-orchestrator-workflow.md`](docs/01-orchestrator-workflow.md) — the mandatory 5-step way of working (+ optional model-routed `/fable-5` and `/ship` loops)
 3. [`docs/02-memory-protocol.md`](docs/02-memory-protocol.md) — how file-based memory works
-4. [`docs/03-inter-session.md`](docs/03-inter-session.md) — coordinating parallel sessions
+4. [`docs/03-inter-session.md`](docs/03-inter-session.md) — coordinating parallel sessions (board, deploy lock, handoff queue, merge hygiene)
 5. [`docs/04-onboarding-new-project.md`](docs/04-onboarding-new-project.md) — adding a project/workspace
 6. [`docs/05-public-fork-plan.md`](docs/05-public-fork-plan.md) — how this sanitized fork is produced from a private instance
+7. [`docs/06-lessons-learned.md`](docs/06-lessons-learned.md) — problems hit in real use → the rule each one produced (verification, git & publishing, memory & files, platform gotchas, working style)
+
+---
+
+*Last updated: 2026-10-05*

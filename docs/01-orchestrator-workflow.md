@@ -53,3 +53,25 @@ reviewer** — ไม่ใช่คนลงมือเขียนโค้�
 
 หลักการอ่านตาราง: ยิ่งงานแตะ code/state จริงและ irreversible มาก → ยิ่งต้องผ่าน
 workflow เต็ม; งานที่ mechanical / read-only / reversible → ข้ามได้
+
+---
+
+## Variant: model routing ต่อ phase (`/fable-5`) + ship loop (`/ship`)
+
+ลูป 5 ขั้นเดิม แต่ pin model ให้แต่ละ phase — ดู `../skills/fable-5/SKILL.md`:
+
+| Phase | โมเดล | บทบาท |
+|---|---|---|
+| Gather (เก็บ fact / probe ตามสูตร) | โมเดลเบา (Sonnet) — ใช้ workhorse เฉพาะต้อง trace code ซับซ้อน | มือเบา |
+| Analyze / architect / plan / go-no-go | โมเดลแพงสุด (Fable 5) — **คิดอย่างเดียว ไม่ลงมือ** | สมอง |
+| Code tier 1 (มี deterministic gate ครอบ) | โมเดลเบา | มือเบา |
+| Code tier 2 (DB function / RLS / money logic / cross-file refactor / ไม่แน่ใจ) | workhorse (Opus 5.5) | มือหนัก |
+| Final review (reviewer คนละตัวกับคนเขียน, judge ≥ answerer) | workhorse | มือ reviewer |
+| สื่อสาร / git / PR / deploy ตาม runbook | โมเดลเบา | มือเบา |
+
+`/ship` (`../skills/ship/SKILL.md`) = ลูปตอนงาน "coded" → "live & verified": reconcile
+requirement จริง → verify schema กับ live DB → build → review → PR → deploy → verify บน live
+ด้วย browser → housekeep (ปล่อย lock / fold HANDOFF / update memory)
+
+> ทั้งสองเป็น **optional** — ลูป 5 ขั้นข้างบนคือแกน; skill แค่ทำให้เรียกครบในคำสั่งเดียว
+> และกัน step หลุดตอน context ใกล้เต็ม
