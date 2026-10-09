@@ -1,11 +1,11 @@
 # MEMORY_SCHEME.md — Workspace + Memory System Reference
 
-> Reference document สำหรับ scheme ของ Claude memory + workspace.
+> Reference document สำหรับ scheme ของ agent memory + workspace (ใช้ได้ทั้ง Claude Code และ Codex).
 > Auto-load rules + audit + templates + examples
 >
-> Top-level rules อยู่ที่ `~/.claude/CLAUDE.md`
-> Workspace context อยู่ที่ `~/.claude/workspaces/<name>/CLAUDE.md`
-> Project memory อยู่ที่ `~/.claude/projects/C--Users-you/memory/`
+> Top-level rules อยู่ที่ `{{AGENT_HOME}}/AGENTS.md`
+> Workspace context อยู่ที่ `{{AGENT_HOME}}/workspaces/<name>/AGENTS.md`
+> Project memory อยู่ที่ `{{MEMORY_DIR}}/`
 >
 > ไฟล์นี้ load on-demand (ไม่ auto-load ทุก session)
 >
@@ -15,24 +15,45 @@
 
 ## 📐 Architecture overview
 
+**Claude Code** (`setup.ps1`):
+
 ```
 ~/.claude/
-├── CLAUDE.md                          ← thin router: rules + workspace registry + cwd mapping
+├── CLAUDE.md                          ← `@AGENTS.md` + Claude-only specifics
+├── AGENTS.md                          ← thin router: rules + workspace registry + cwd mapping
 ├── MEMORY_SCHEME.md                   ← ไฟล์นี้ (reference / audit / templates)
-├── backups/                           ← backup ของ CLAUDE.md ก่อน refactor + memory-shadow/ (จาก memory-guard)
+├── settings.json                      ← hooks (SessionStart / PreCompact / SessionEnd / PostToolUse)
+├── docs/ · templates/                 ← คู่มือ + template (path ถูกแทนแล้ว)
+├── backups/                           ← backup ก่อน refactor + memory-shadow/ (จาก memory-guard)
 ├── workspaces/                        ← business workspace context (ตัวอย่างสมมติด้านล่าง)
-│   ├── acme-corp/CLAUDE.md            ← Corporate HQ / ERP / Operations / B2B
-│   └── acme-snacks/CLAUDE.md          ← Brand: consumer snack, retail D2C
-├── projects/C--Users-you/memory/      ← project memory (FLAT — don't move into workspaces)
-│   ├── MEMORY.md                      ← index (grouped by workspace)
+│   ├── acme-corp/AGENTS.md            ← Corporate HQ / ERP / Operations / B2B
+│   └── acme-snacks/AGENTS.md          ← Brand: consumer snack, retail D2C
+├── projects/C--Users-you/memory/      ← memory dir (FLAT — don't move into workspaces)
+│   ├── MEMORY.md                      ← index (grouped by workspace) + Feedback section
 │   ├── SESSION-BOARD.md               ← on-demand inter-session board — NOT auto-loaded
 │   ├── project-*.md                   ← per-project memory files (frontmatter has `workspace:`)
 │   ├── feedback-*.md                  ← global lessons
 │   └── user-system-info.md
-├── skills/                            ← optional: fable-5/ (model routing), ship/ (deploy + verify loop)
+├── skills/                            ← memory-save, memory-recall, memory-consolidate, orchestrated-loop, ship
 └── hooks/
-    ├── memory-checkpoint.js           ← audit-only hook (+ SessionStart memory load)
+    ├── memory-checkpoint.js           ← audit log + SessionStart memory header (`--agent claude`)
+    ├── memory-extract.js              ← daily log จาก transcript (Claude เท่านั้น)
     └── memory-guard.js                ← restore memory file ที่โดน truncate เหลือ 0 byte
+```
+
+**Codex** (`setup-codex.ps1`):
+
+```
+~/.codex/                              ← $CODEX_HOME
+├── AGENTS.md                          ← global instructions (ไฟล์เดียวกับข้างบน, path เป็นของ Codex)
+├── MEMORY_SCHEME.md · docs/ · templates/
+├── hooks.json                         ← SessionStart (checkpoint + guard) + PostToolUse (guard) — ต้อง trust ใน /hooks
+├── hooks/{memory-checkpoint.js, memory-guard.js}   ← `--agent codex`
+├── agents/{planner, reviewer, worker-heavy, worker-light}.toml
+├── workspaces/<name>/AGENTS.md
+├── backups/memory-shadow/
+└── conductor-memory/                  ← memory dir (โครงเดียวกับข้างบน) — ต้องอยู่ใน writable_roots
+~/.agents/skills/                      ← skills ชุดเดียวกัน (home จริง ไม่ใช่ CODEX_HOME)
 ```
 
 ---
@@ -47,7 +68,7 @@
 | `acme-snacks` | Brand under acme-corp — consumer retail snack, D2C voice | acme-corp (production/certs) — explicit Read |
 
 **Inheritance rule:** workspaces ไม่ auto-inherit context กัน — ต้อง **explicit Read** ตาม link
-ที่ระบุใน workspace CLAUDE.md (lower friction, less context tax, intentional reference)
+ที่ระบุใน workspace `AGENTS.md` (lower friction, less context tax, intentional reference)
 
 ---
 
@@ -57,19 +78,19 @@ Legend: ✅ done / ⚠️ partial / ❌ missing / 🔵 N/A
 
 ### acme-corp workspace
 
-| Project | Memory file | `workspace:` tag | cwd map | Project CLAUDE.md | Verify recipe |
+| Project | Memory file | `workspace:` tag | cwd map | Project AGENTS.md | Verify recipe |
 |---|---|---|---|---|---|
 | Acme ERP | ✅ project-acme-erp.md | ✅ acme-corp | ✅ `acme-erp` | ✅ | ✅ |
 | Acme Automation | ✅ project-acme-automation.md | ✅ acme-corp | ✅ `acme-automation` | ✅ | ✅ |
 
 ### acme-snacks workspace
 
-| Project | Memory file | `workspace:` tag | cwd map | Project CLAUDE.md | Verify recipe |
+| Project | Memory file | `workspace:` tag | cwd map | Project AGENTS.md | Verify recipe |
 |---|---|---|---|---|---|
 | Acme Snacks Website | ✅ project-acme-web.md | ✅ acme-snacks | ✅ `acme-web` | ✅ | ✅ |
 
 > ใช้ตารางแบบนี้ track ว่าแต่ละ project มีครบทุกชิ้นไหม (memory file / workspace tag /
-> cwd mapping row / project CLAUDE.md / verify recipe) — ช่องที่ ❌ คือ gap ที่ต้องปิด
+> cwd mapping row / project AGENTS.md / verify recipe) — ช่องที่ ❌ คือ gap ที่ต้องปิด
 
 ---
 
@@ -77,33 +98,34 @@ Legend: ✅ done / ⚠️ partial / ❌ missing / 🔵 N/A
 
 ```
 1. CREATE memory file:
-   ~/.claude/projects/C--Users-you/memory/project-<name>.md
+   {{MEMORY_DIR}}/project-<name>.md
    ↳ frontmatter (see template below)
    ↳ + Last verified: <date> @ <commit> + Verify rule pointer
    ↳ + sections: Current Status / Tech Stack / Key Decisions / Done / Pending
 
 2. ADD to MEMORY.md (under correct workspace group)
 
-3. ADD cwd mapping row in ~/.claude/CLAUDE.md §Project mapping (if project has cwd)
+3. ADD cwd mapping row in {{AGENT_HOME}}/AGENTS.md §Project mapping (if project has cwd)
+   + PROJECT_MEMORY_MAP in {{AGENT_HOME}}/hooks/memory-checkpoint.js
 
-4. CREATE <project-root>/CLAUDE.md
+4. CREATE <project-root>/AGENTS.md (+ one-line CLAUDE.md `@AGENTS.md` for Claude Code)
    ↳ Stack section
    ↳ Output/Code/Review rules
    ↳ Stack-specific rules
    ↳ Memory Persistence section (path + triggers + verify recipe)
-   ↳ Cross-ref to workspace CLAUDE.md
+   ↳ Cross-ref to workspace AGENTS.md
 ```
 
 ## 🚀 Onboarding new workspace
 
 ```
-1. mkdir ~/.claude/workspaces/<name>/
-2. CREATE ~/.claude/workspaces/<name>/CLAUDE.md
+1. mkdir {{AGENT_HOME}}/workspaces/<name>/
+2. CREATE {{AGENT_HOME}}/workspaces/<name>/AGENTS.md
    ↳ Identity / scope
    ↳ Project list (link to memory files)
    ↳ Cross-ref rules (if inherits from another workspace)
-3. ADD row (รวม trigger keywords) in ~/.claude/CLAUDE.md §Workspace Registry + Auto-load
-4. ADD section in ~/.claude/projects/C--Users-you/memory/MEMORY.md
+3. ADD row (รวม trigger keywords) in {{AGENT_HOME}}/AGENTS.md §Workspace registry
+4. ADD section in {{MEMORY_DIR}}/MEMORY.md
 5. CREATE first project (follow Onboarding new project steps)
 ```
 
@@ -122,7 +144,7 @@ type: project
 originSessionId: <uuid — first session that created this memory>
 ---
 **Last verified:** YYYY-MM-DD @ <commit>
-**Verify rule:** Re-verify if older than 5 days. Recipe in project CLAUDE.md.
+**Verify rule:** Re-verify if older than 5 days or the commit != HEAD. Recipe in the project AGENTS.md.
 
 ## Project: <Project Name>
 
@@ -146,10 +168,10 @@ originSessionId: <uuid — first session that created this memory>
 1. ...
 ```
 
-### Project CLAUDE.md skeleton
+### Project AGENTS.md skeleton
 
 ```markdown
-# CLAUDE.md — <Project Name>
+# AGENTS.md — <Project Name>
 
 > One-line summary of what this project is
 
@@ -169,8 +191,8 @@ originSessionId: <uuid — first session that created this memory>
 - (project-specific style + conventions)
 
 ## Memory Persistence
-**Memory file:** `~/.claude/projects/C--Users-you/memory/project-<name>.md`
-**Workspace context:** `~/.claude/workspaces/<workspace>/CLAUDE.md`
+**Memory file:** `{{MEMORY_DIR}}/project-<name>.md`
+**Workspace context:** `{{AGENT_HOME}}/workspaces/<workspace>/AGENTS.md`
 
 **Save memory IMMEDIATELY on:**
 - (milestone 1)
@@ -182,8 +204,10 @@ originSessionId: <uuid — first session that created this memory>
 # (3-7 read-only commands specific to this project)
 ```
 
-Manual triggers: `/memory-save` / `/memory-recall`.
+Skills: `memory-save` / `memory-recall`.
 ```
+
+(ไฟล์เต็มอยู่ที่ `templates/project-AGENTS.md.template`; Claude Code เพิ่ม `CLAUDE.md` 1 บรรทัด `@AGENTS.md`)
 
 ---
 
@@ -239,12 +263,12 @@ curl -sI https://<domain>/sitemap.xml | head -3
 
 | Frequency | Action |
 |---|---|
-| Every session start | Auto-load workspace CLAUDE.md (per cwd / topic mention) |
-| Every milestone | Update project memory + MEMORY.md one-liner |
+| Every session start | Read project memory + `MEMORY.md` Feedback + workspace `AGENTS.md` (per cwd / topic mention) — the SessionStart hook only injects the header |
+| Every milestone | Update project memory + MEMORY.md one-liner (skill `memory-save`) |
 | Every 5-7 days | If `Last verified` stale (date > 5 days, or its commit ≠ HEAD) → run project's verify recipe before trusting |
-| Every quarter | Run `/consolidate-memory` — merge duplicates, fix stale facts, prune index |
-| Multi-session work | Update `SESSION-BOARD.md` on claim/finish; prune stale IN-FLIGHT rows (>3 วัน; §HANDOFF QUEUE exempt — fold on `/memory-save`) — see CLAUDE.md §Inter-session Coordination |
-| Before major refactor | Backup `~/.claude/CLAUDE.md` to `~/.claude/backups/CLAUDE-pre-<change>-YYYY-MM-DD.md` |
+| Every quarter | Run skill `memory-consolidate` — merge duplicates, fix stale facts, prune index |
+| Multi-session work | Update `SESSION-BOARD.md` on claim/finish; prune stale IN-FLIGHT rows (>3 วัน; §HANDOFF QUEUE exempt — fold on `memory-save`) — see AGENTS.md §Inter-session coordination |
+| Before major refactor | Backup `{{AGENT_HOME}}/AGENTS.md` to `{{AGENT_HOME}}/backups/AGENTS-pre-<change>-YYYY-MM-DD.md` |
 
 ---
 
@@ -252,10 +276,10 @@ curl -sI https://<domain>/sitemap.xml | head -3
 
 หลัง onboard project ใหม่ ๆ ให้ไล่ปิด gap จากตาราง audit (ช่องที่ ❌) เรียงตาม impact:
 
-1. **Add cwd map + project CLAUDE.md + verify recipe** ให้ project ที่ active แต่ยังขาด
+1. **Add cwd map + project AGENTS.md + verify recipe** ให้ project ที่ active แต่ยังขาด
 2. **Populate workspace** ที่ยังว่างเมื่อมีข้อมูลจริง
 3. **Audit project เก่า** — ยืนยันว่ายัง active หรือควร archive
 
 ---
 
-*Template for the public claude-conductor. Replace the AcmeCorp examples with your own. · Last updated: 2026-10-05*
+*Template for the public claude-conductor. Replace the AcmeCorp examples with your own. · Last updated: 2026-10-09*

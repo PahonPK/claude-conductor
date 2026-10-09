@@ -11,18 +11,22 @@
  *
  * No 5s budget here — runs detached.
  * Always exit 0; log errors to events.jsonl.
+ *
+ * CLAUDE CODE ONLY. It parses Claude's transcript JSONL; Codex's session/rollout
+ * format is not handled, so setup-codex.ps1 does not install this file and
+ * Codex never wires PreCompact/SessionEnd. Log dir = <agent home>/memory-checkpoints,
+ * where agent home is the dir that holds this hooks/ dir (~/.claude) - the same
+ * dir memory-checkpoint.js reads the daily log from.
  */
 
 "use strict";
 
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
 const crypto = require("crypto");
 const readline = require("readline");
 
-const HOME = os.homedir();
-const LOG_DIR = path.join(HOME, ".claude", "memory-checkpoints");
+const LOG_DIR = path.join(path.dirname(__dirname), "memory-checkpoints");
 const EVENTS_LOG = path.join(LOG_DIR, "events.jsonl");
 const DAILY_DIR = path.join(LOG_DIR, "daily");
 const STATE_FILE = path.join(LOG_DIR, "state.json");

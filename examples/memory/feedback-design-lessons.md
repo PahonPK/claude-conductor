@@ -1,6 +1,6 @@
 ---
 name: feedback-design-lessons
-description: EXAMPLE (fictional) design-time lessons registry — recurring root-cause classes with the rule that prevents each; read in /fable-5 Phase 2 before designing any feature
+description: EXAMPLE (fictional) design-time lessons registry — recurring root-cause classes with the rule that prevents each; read in orchestrated-loop Phase 2 before designing any feature
 type: feedback
 originSessionId: 00000000-0000-0000-0000-000000000000
 ---
@@ -8,7 +8,7 @@ originSessionId: 00000000-0000-0000-0000-000000000000
 # Design lessons — read BEFORE designing, not after shipping
 
 **Why:** the same mistakes ship repeatedly when lessons live scattered across PRs and handoffs. Root cause + preventing rule in ONE place, re-read at design time.
-**How:** `/fable-5` Phase 2 reads this before locking any plan that touches UI, document lifecycle, notifications, client writes, schema, money or auth. Add or strengthen an entry only for a *class* of mistake (not a one-off), ≤ 5 lines each, and cite the incident/PR that proved it. Do not prune entries as YAGNI — each one is the evidence of real need; prune only when the mechanism it guards no longer exists.
+**How:** the `orchestrated-loop` skill's Phase 2 reads this before locking any plan that touches UI, document lifecycle, notifications, client writes, schema, money or auth. Add or strengthen an entry only for a *class* of mistake (not a one-off), ≤ 5 lines each, and cite the incident/PR that proved it. Do not prune entries as YAGNI — each one is the evidence of real need; prune only when the mechanism it guards no longer exists.
 
 ## A. Forms & vocabulary
 

@@ -1,12 +1,13 @@
-# Claude Memory — (your handle)
+# Memory index — (your handle)
 
 > EXAMPLE memory index (100% fictional). Shows what a filled-in
-> `~/.claude/projects/C--Users-you/memory/MEMORY.md` looks like.
+> `MEMORY.md` in your memory dir looks like (Claude Code: `~/.claude/projects/<slug>/memory/`,
+> Codex: `~/.codex/conductor-memory/`).
 >
 > Index of all project memory files, grouped by **workspace**.
 > 📏 กฎ index: entry ละ ≤ 3 บรรทัด (สถานะปัจจุบัน + critical pending เท่านั้น) —
 > changelog/commit history อยู่ใน project file **ห้ามอยู่ที่นี่**
-> Workspace CLAUDE.md: `~/.claude/workspaces/<name>/CLAUDE.md` · Global rules: `~/.claude/CLAUDE.md`
+> Workspace file: `<agent home>/workspaces/<name>/AGENTS.md` · Global rules: `<agent home>/AGENTS.md`
 >
 > ℹ️ ในตัวอย่างนี้มี sample memory file จริงให้ดูแค่ไฟล์เดียว — `project-acme-web.md`
 > (entry ที่มี link). entry อื่น ๆ เป็น plain text เพื่อโชว์ว่า index หน้าตาเป็นยังไง

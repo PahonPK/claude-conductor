@@ -1,43 +1,45 @@
 # 03 — Inter-session Coordination (SESSION-BOARD.md + worktrees)
 
-> Source: §Inter-session Coordination ใน `../CLAUDE.md`
+> Source: §Inter-session coordination ใน `../AGENTS.md`
 > ใช้เฉพาะตอนมีหลาย session ทำงาน**คู่ขนาน**บน project เดียวกัน
 >
-> `CLAUDE.md` เก็บแค่ **กฎ** (rules-only, โหลดทุก session) — เอกสารนี้คือ **เหตุผล + ตัวอย่าง +
+> `AGENTS.md` เก็บแค่ **กฎ** (rules-only, โหลดทุก session) — เอกสารนี้คือ **เหตุผล + ตัวอย่าง +
 > incident** เบื้องหลังกฎเหล่านั้น อ่านเมื่อกฎดูไม่มีเหตุผล หรือเจอ edge case ที่กฎไม่ครอบ
-> *(Last updated: 2026-10-05)*
+> *(Last updated: 2026-10-09)*
 
 ---
 
 ## ปัญหาที่แก้
 
-บางครั้งมีหลาย Claude session ทำงานพร้อมกันบน project เดียว (เช่น 2 session
+บางครั้งมีหลาย agent session ทำงานพร้อมกันบน project เดียว (เช่น 2 session
 แก้ codebase/DB เดียวกัน) — เสี่ยงชนกัน
 
-**ศัพท์ git 2 คำที่ต้องเข้าใจก่อน (อธิบายด้วยภาพโต๊ะ/ตู้เอกสาร):**
-- **HEAD** = ตัวชี้ว่า "ตอนนี้โต๊ะกำลังโชว์งานเวอร์ชันไหน". `git checkout <branch>` = สลับให้โต๊ะโชว์งานอีกชุด.
-- **ref** = ป้ายชื่อที่ git ใช้ชี้ไปยังงานที่ **commit แล้ว** (branch ก็คือ ref ชนิดหนึ่ง). ตราบใดที่งานถูก commit มันมีป้ายชี้อยู่ใน **object DB = คลังเก็บงานทุกเวอร์ชันในตู้เอกสาร** เสมอ — ถึงจะหายจากหน้าโต๊ะก็กู้กลับมาได้
+**ศัพท์ git ที่ต้องเข้าใจก่อน:**
+- **working tree** = โฟลเดอร์ไฟล์ที่ checkout ออกมาให้แก้ได้จริง (หนึ่ง clone มี main working tree 1 อัน + worktree เพิ่มได้)
+- **HEAD** = ตัวชี้ว่า working tree นั้นกำลัง checkout commit/branch ไหนอยู่. `git checkout <branch>` = เปลี่ยน HEAD
+  แล้วเขียนไฟล์ทั้ง working tree ใหม่ให้ตรงกับ branch นั้น
+- **ref** = ชื่อที่ชี้ไปยัง commit (branch, tag ก็คือ ref). งานที่ **commit แล้ว** อยู่ใน **object DB** (`.git/objects`)
+  และมี ref ชี้อยู่ — ต่อให้ไฟล์หายจาก working tree ก็ยังกู้จาก ref ได้เสมอ. งานที่ยัง**ไม่ commit** อยู่แค่ใน working tree
 
 เคยมีเคส session หนึ่งกำลังแก้ migration file อยู่ อีก session `git checkout` อีก
-branch ใน working tree เดียวกัน → โต๊ะสลับไปโชว์งานชุดอื่น (HEAD เด้ง) ไฟล์ของ
-session แรก**หายไปจากหน้าโต๊ะ** (แต่ไม่ได้ถูกลบจริง — ยังอยู่ในตู้เอกสารบน ref; กู้คืน
-ด้วย `git show <ref>:<path>` แล้ว push กลับ ไม่ได้ checkout). อีกเคส: trigger บน live DB
+branch ใน working tree เดียวกัน → HEAD เปลี่ยน ไฟล์ใน working tree ถูกเขียนใหม่ตาม branch อื่น ไฟล์ของ
+session แรก**หายไปจาก working tree** (แต่ไม่ได้ถูกลบจริง — commit ยังอยู่ใน object DB บน ref; กู้คืน
+ด้วย `git show <ref>:<path>` แล้ว push กลับ ไม่ได้ checkout). อีกเคส: trigger บน live database
 ถูก replace ทับจน guard เก่าหาย เพราะ guard นั้นอยู่ใน DB แต่ไม่ติดบน git ref ใด ๆ
 
 ---
 
-## โมเดล: ของ share กัน 4 (+1) อย่าง แต่ละอย่างมี "ผู้ดูแล" คนเดียว
+## โมเดล: ของที่ share กัน 4 (+1) อย่าง แต่ละอย่างมีวิธีกันชนของตัวเอง
 
-คิดเหมือนออฟฟิศที่หลายคนทำงานพร้อมกัน — มีของกลาง 4 ชิ้น (ชิ้นที่ 5 เพิ่มทีหลังเมื่อมี
-deploy target ที่ share กัน):
+หลาย session ใช้ของกลางร่วมกัน 4 อย่าง (อย่างที่ 5 เพิ่มทีหลังเมื่อมี deploy target ที่ share กัน):
 
-| ของกลาง (analogy) | ความเสี่ยง | ผู้ดูแล / วิธีกัน |
+| ของที่ share | ความเสี่ยง | วิธีกัน |
 |---|---|---|
-| 🗂️ **Working tree** (โต๊ะทำงาน) | อีกคน checkout แล้ว HEAD เด้ง ไฟล์เราหายจากโต๊ะ | **worktree ของใครของมัน** (เฉพาะตอนมี session อื่น live) — โต๊ะแยก ใช้ตู้เอกสาร (object DB) ก้อนเดียวกัน |
-| 🗄️ **Git history** (ตู้เอกสารกลาง) | checkout ทับ HEAD เพื่อน | append-only + วินัย ref (อ่านด้วย `git show`, เผยแพร่ด้วย `push`) |
-| 🧱 **DB / live schema** (ไวต์บอร์ดผนัง) | จอง timestamp ชน / replace function ทับ guard | board reservation + **look-before-replace** |
-| 📓 **Project state** (สมุดจดกลาง) | จำสถานะไม่ตรงกัน | project memory (MEMORY.md + project-*.md) — เหมือนเดิม |
-| 🚦 **Deploy target ที่ share กัน** (ตู้ที่กำลังใช้งานจริง) | 2 session rebuild container เดียวกันพร้อมกัน | **DEPLOY LOCK** บน board (ดูข้อ 5) |
+| 🗂️ **Working tree** | อีก session checkout แล้ว HEAD เปลี่ยน ไฟล์เราหายจาก working tree | **worktree ของใครของมัน** (เฉพาะตอนมี session อื่น live) — working tree แยก แต่ใช้ object DB ก้อนเดียวกัน |
+| 🗄️ **Git refs / object DB** | checkout ทับ HEAD ของ session อื่น | append-only + วินัย ref (อ่านด้วย `git show`, เผยแพร่ด้วย `push`) |
+| 🧱 **Live database / schema** | จอง migration timestamp ชน / replace function ทับ guard | board reservation + **look-before-replace** |
+| 📓 **Project memory** | จำสถานะไม่ตรงกัน | project memory (`MEMORY.md` + `project-*.md`) + HANDOFF QUEUE |
+| 🚦 **Shared deploy target** (container/host ที่หลาย session rebuild) | 2 session rebuild container เดียวกันพร้อมกัน | **DEPLOY LOCK** บน board (ดูข้อ 5) |
 
 ---
 
@@ -47,66 +49,65 @@ deploy target ที่ share กัน):
 บนบอร์ดก่อน) — เป็นเครื่องมือกันชน ไม่ใช่พิธีกรรมที่ต้องทำทุกครั้ง. **session เดียว
 โดด ๆ ทำใน tree ปกติได้เลย ไม่ต้องตั้ง worktree.**
 
-เมื่อมีหลาย session: แทนที่จะแย่งโต๊ะตัวเดียว (working tree เดียว) แต่ละ session เปิด
-**git worktree ของตัวเอง** — ต่างคนต่างมีโต๊ะ แต่ยังใช้ตู้เอกสาร (object DB) ก้อน
-เดียวกัน session อื่นจะมา checkout บนโต๊ะเราไม่ได้ ไฟล์ที่เรากำลังแก้เลยไม่หายจากโต๊ะ
+เมื่อมีหลาย session: แทนที่จะแย่ง working tree เดียว แต่ละ session ใช้ **git worktree ของตัวเอง**
+— working tree แยกกัน แต่ object DB (commit / branch / ref) ก้อนเดียวกัน. session อื่นจึง checkout
+ทับ working tree ของเราไม่ได้ ไฟล์ที่เรากำลังแก้ไม่หาย
 
-**ลำดับสำคัญ — เข้า worktree ก่อน แล้วค่อยทำอย่างอื่น:**
-1. `EnterWorktree` (สร้าง worktree ใต้ `.claude/worktrees/` บน branch ใหม่ + ย้าย
-   **cwd = โฟลเดอร์ที่ session กำลังทำงานอยู่** เข้าไป)
-2. **แล้วค่อย** create branch / สั่งผู้ช่วย (agent) / รัน build
+**ลำดับสำคัญ — สร้าง/เข้า worktree ก่อน แล้วค่อยทำอย่างอื่น:**
+1. สร้าง worktree แล้วย้าย session เข้าไป:
+   - ทั่วไป (ทุก agent): `git fetch` → `git worktree add ../<repo>-<task> -b <branch> origin/<default-branch>`
+     → เปิด session (เช่น `codex`) ใน dir นั้น
+   - Claude Code: `git fetch` → `EnterWorktree` (สร้าง worktree ใต้ `.claude/worktrees/` บน branch ใหม่ + ย้าย cwd ของ session เข้าไป)
+2. **แล้วค่อย** create branch / spawn subagent / รัน build
 
-> ⚠️ ถ้าเราสั่งให้ **ผู้ช่วย (agent)** หรือ **คำสั่งที่รันค้างไว้ (background bash)**
-> เริ่มทำงาน *ก่อน* ย้ายเข้า worktree พวกมันจะยัง**จ่ออยู่ที่โต๊ะเดิม** ไม่ย้ายตามเรา
-> → ไปแก้ผิดโต๊ะ. ดังนั้นเข้า worktree ให้เสร็จก่อน แล้วค่อยสั่งผู้ช่วย/รันคำสั่งยาว ๆ.
-> (1 branch checkout ได้ใน worktree เดียวเท่านั้น)
+> ⚠️ ถ้าสั่ง **subagent** หรือ **คำสั่งที่รันค้างไว้ (background command)** เริ่มทำงาน *ก่อน* ย้ายเข้า
+> worktree พวกมันจะยัง**ทำงานใน working tree เดิม** ไม่ย้ายตาม → ไปแก้ผิดที่. ดังนั้นเข้า worktree
+> ให้เสร็จก่อน แล้วค่อยสั่ง subagent/รันคำสั่งยาว ๆ. (1 branch checkout ได้ใน worktree เดียวเท่านั้น)
 
-**ถ้าเผลอเริ่มงานใน master tree ไปแล้ว (กฎ enter-first พลาด):**
-1. STOP — อย่าสั่ง agent / รัน build เพิ่ม
-2. ยังไม่ commit → `git stash` ใน master ก่อน (worktree ใหม่ default `fresh` แตกจาก
-   origin/master จะไม่ลากงานที่ยัง uncommitted ติดไป)
-3. `EnterWorktree`
+**ถ้าเผลอเริ่มงานใน main tree ไปแล้ว (กฎ enter-first พลาด):**
+1. STOP — อย่าสั่ง subagent / รัน build เพิ่ม
+2. ยังไม่ commit → `git stash` ใน main tree ก่อน (worktree ใหม่แตกจาก `origin/<default>`
+   จะไม่ลากงานที่ยัง uncommitted ติดไป)
+3. สร้าง/เข้า worktree (ข้อ 1 ข้างบน)
 4. ใน worktree → `git stash pop` ได้เลย (stash อยู่ใน `.git` ที่ share กัน ข้าม
-   worktree ได้). ถ้าเป็นงานที่ commit ไปแล้วใน master → ดึงด้วย `git show <ref>:<path>`
+   worktree ได้). ถ้าเป็นงานที่ commit ไปแล้วใน main tree → ดึงด้วย `git show <ref>:<path>`
    / cherry-pick ผ่าน object DB ที่ share กันแทน
-5. agent / background bash ที่ spawn ไปก่อนเข้า worktree = ยังชี้ master → kill แล้ว
+5. subagent / background command ที่ spawn ไปก่อนเข้า worktree = ยังชี้ main tree → kill แล้ว
    spawn ใหม่หลังเข้า worktree
 
 **ข้อควรรู้ (อย่าหลงคิดว่า worktree แก้ทุกอย่าง):**
 - ไม่ใช่ของฟรี/auto — ต้อง **setup ครั้งเดียวต่อ repo + เป็นนิสัยที่ต้องทำเอง**
-  (SessionStart hook เรียก EnterWorktree ไม่ได้)
-- **ไม่ได้แยก DB** — migration ยังเป็น global side-effect → ยังต้องจอง board (ดูข้อ 3)
-- เก็บกวาด: worktree ค้างลบเองได้ (`git worktree prune` / ลบ dir เก่า) —
+  (hook สร้าง/ย้าย session เข้า worktree ให้ไม่ได้)
+- **ไม่ได้แยก database** — migration ยังเป็น global side-effect → ยังต้องจอง board (ดูข้อ 3)
+- เก็บกวาด: worktree ค้างลบเองได้ (`git worktree remove` / `git worktree prune`) —
   committed work ปลอดภัยบน ref ไม่ว่าจะลบ worktree ทิ้งหรือไม่
-- **2 วิธีสร้าง worktree ใช้ได้ทั้งคู่:** มาตรฐาน = `EnterWorktree` (ใต้
-  `.claude/worktrees/` + auto-branch ชื่อสุ่ม); ถ้าต้องการ **branch ชื่อเฉพาะ** ใช้
-  worktree แบบ sibling directory บน named branch ก็ได้ (เช่น `<repo>-<task>`). ทั้งคู่
-  ใช้ object DB เดียวกัน วินัย ref เหมือนกันเป๊ะ
+- **2 แบบใช้ได้ทั้งคู่:** sibling directory บน named branch (`git worktree add ../<repo>-<task> -b <branch>`)
+  หรือ Claude Code `EnterWorktree` (ใต้ `.claude/worktrees/` + auto-branch). ทั้งคู่ใช้ object DB
+  เดียวกัน วินัย ref เหมือนกันเป๊ะ
 
 **Setup ครั้งเดียวต่อ repo:**
-- เพิ่ม `/.claude/worktrees/` ลง `.gitignore` ของ repo — **ถ้า `.claude/` ถูก track อยู่**
+- worktree แบบ sibling directory อยู่นอก repo อยู่แล้ว ไม่ต้องทำอะไร
+- Claude Code `EnterWorktree`: เพิ่ม `/.claude/worktrees/` ลง `.gitignore` ของ repo — **ถ้า `.claude/` ถูก track อยู่**
   การไม่ ignore จะทำให้ worktree ไป pollute `git status` / เสี่ยง commit ติดไป.
   (ignore เฉพาะ `/worktrees/` อย่า ignore ทั้ง `/.claude/` ไม่งั้นไฟล์ที่ track หลุด)
-- เรื่อง base ของ worktree: `worktree.baseRef` default = `fresh` อยู่แล้ว = แตก branch
-  จาก **origin/<default-branch>** (ไม่ใช่ local HEAD). ดังนั้น **`git fetch` ก่อน
-  EnterWorktree เสมอ** ไม่งั้นแตกจาก remote-tracking ที่ stale. *(ไม่ต้องไปตั้ง
-  baseRef=fresh — เป็น default; ถ้าจงใจอยากแตกจาก local HEAD ที่ยังไม่ push →
-  `git config worktree.baseRef head`)*
+- base ของ worktree: แตกจาก **`origin/<default-branch>`** เสมอ ดังนั้น **`git fetch` ก่อนสร้าง worktree**
+  ไม่งั้นแตกจาก remote-tracking ที่ stale. *(Claude Code: `worktree.baseRef` default = `fresh` อยู่แล้ว =
+  แตกจาก origin; ถ้าจงใจอยากแตกจาก local HEAD ที่ยังไม่ push → `git config worktree.baseRef head`)*
 
-## 2) 🗄️ Git history → วินัยการอ่าน/เผยแพร่งาน (ref)
+## 2) 🗄️ Git refs / object DB → วินัยการอ่าน/เผยแพร่งาน
 
-ตู้เอกสารกลาง (commit / branch / object DB) เป็น append-only อยู่แล้ว ปลอดภัยโดย
+object DB (commit / branch / ref) เป็น append-only อยู่แล้ว ปลอดภัยโดย
 ธรรมชาติ — แต่มีวินัย 3 ข้อ:
-- **ห้าม `git checkout` branch ของ session อื่นใน tree ที่ share กัน** (ทำให้ HEAD
-  เพื่อนเด้ง = ต้นเหตุ incident ข้างบน)
+- **ห้าม `git checkout` branch ของ session อื่นใน working tree ที่ share กัน** (ทำให้ HEAD
+  ของ session อื่นเปลี่ยน = ต้นเหตุ incident ข้างบน)
 - อยากอ่าน branch อื่น → `git show <ref>:<path>` (ไม่ต้อง checkout)
 - เผยแพร่งาน → `git push` / ref-push
 
-## 3) 🧱 DB / live schema → board + look-before-replace
+## 3) 🧱 Live database / schema → board + look-before-replace
 
-DB เป็นไวต์บอร์ดบนผนัง — ทุก session เห็นอันเดียวกัน worktree ช่วยไม่ได้:
+database ตัวเดียวกันถูกทุก session เห็นและแก้ร่วมกัน — worktree ช่วยไม่ได้:
 - **จอง board เหมือนเดิม** สำหรับ migration timestamp / shared table·RLS (ดูหัวข้อ board ด้านล่าง)
-- **กฎใหม่ราคาถูก — look before replace:** ก่อน `CREATE OR REPLACE` function/trigger
+- **กฎราคาถูก — look before replace:** ก่อน `CREATE OR REPLACE` function/trigger
   ที่ share กัน → **เปิดดู definition จริงบน live DB ก่อน** อย่า overwrite มืด ๆ
   (กันเคส guard เก่าใน DB แต่ไม่ติดบน git ref → ถูกทับหายเงียบ ๆ)
 
@@ -114,13 +115,13 @@ DB เป็นไวต์บอร์ดบนผนัง — ทุก sessi
 replace function ทับแบบมืด ๆ = ลบมันทิ้งโดยไม่มี diff ไม่มี PR ไม่มีร่องรอย. การอ่าน definition
 จริงก่อน = code review สำหรับ object ที่ git มองไม่เห็น
 
-## 4) 📓 Project state → memory เหมือนเดิม
+## 4) 📓 Project memory → memory + HANDOFF QUEUE
 
-สมุดจดกลาง = `MEMORY.md` + `project-*.md` ตาม Memory Protocol (ดูเอกสาร 02)
+project state = `MEMORY.md` + `project-*.md` ตาม Memory Protocol (ดูเอกสาร 02)
 — ถ้า session หนึ่งเปลี่ยน fact ของ project ที่ตัวเองไม่ได้ owns → ส่งผ่าน **HANDOFF QUEUE**
 (ดูหัวข้อ board ด้านล่าง) ไม่เขียนทับไฟล์ของคนอื่นตรง ๆ
 
-## 5) 🚦 Deploy target ที่ share กัน → DEPLOY LOCK
+## 5) 🚦 Shared deploy target → DEPLOY LOCK
 
 **Incident (เกิดจริงใน private instance):** 2 session rebuild frontend container ตัวเดียวกันบน
 server พร้อมกัน — คำสั่ง recreate ของ session ที่สองชน **"name already in use"**, container
@@ -142,8 +143,9 @@ server พร้อมกัน — คำสั่ง recreate ของ sessio
 
 ## Board: `SESSION-BOARD.md`
 
-board กลาง (`~/.claude/projects/C--Users-you/memory/SESSION-BOARD.md`) ใช้จองของกลาง
-ที่ชนกันได้
+board กลาง (`SESSION-BOARD.md` ใน memory dir — Claude: `~/.claude/projects/<slug>/memory/` ·
+Codex: `~/.codex/conductor-memory/`) ใช้จองของกลางที่ชนกันได้. setup seed ไฟล์ตั้งต้นให้
+จาก `templates/SESSION-BOARD.md.template` (6 section ว่าง — รูปแบบ + ตัวอย่างอยู่ใน HTML comment ไม่ใช่ state จริง)
 
 > **ไม่ auto-load** — อ่านเฉพาะตอนงานแตะ multi-session project
 
@@ -233,7 +235,7 @@ worktree กันชนตอน *ทำงาน* — แต่ตอน *merg
 - เพิ่ม gate ใหม่ = เพิ่มไฟล์ที่ถูก discover อัตโนมัติ ไม่ใช่แก้ list กลาง; legacy exemption list ให้
   freeze — ไฟล์ใหม่ที่ไม่ผ่าน gate = แก้ไฟล์ ไม่ใช่เพิ่ม exemption
 
-> ใส่เป็น section `## Merge hygiene` ใน project `CLAUDE.md` (ดู `templates/project-CLAUDE.md.template`)
+> ใส่เป็น section `## Merge hygiene` ใน project `AGENTS.md` (ดู `templates/project-AGENTS.md.template`)
 > แล้วแทนด้วยชื่อไฟล์/คำสั่งจริงของ project
 
 ---
