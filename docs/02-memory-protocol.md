@@ -9,7 +9,8 @@
 
 - **Memory dir** (setup ใส่ path จริงแทน token ใน `AGENTS.md` ให้):
   - Claude Code: `~/.claude/projects/<slug>/memory/` — auto-memory dir ของ home folder;
-    `<slug>` มาจาก home path (`C:\Users\you` → `C--Users-you`), `setup.ps1` คำนวณให้
+    `<slug>` = home path ที่ทุกตัวอักษรที่ไม่ใช่ A-Z/a-z/0-9 ถูกแทนด้วย `-` (`C:\Users\john.doe` →
+    `C--Users-john-doe`), `setup.ps1` คำนวณให้
   - Codex: `~/.codex/conductor-memory/` (ไม่ใช่ `~/.codex/memories/` ซึ่งเป็น memory feature ของ Codex เอง)
   - ใน public framework นี้ดูตัวอย่างได้ที่ `../examples/memory/`
 - **Index:** `MEMORY.md` — สารบัญของ memory file ทั้งหมด จัดกลุ่มตาม workspace
@@ -93,7 +94,8 @@ Hooks (ไม่ได้แทนการ save เอง — ต้อง save
   `_restores.log` (Codex ได้ notice เป็น `additionalContext`). ที่มา: เคยมี memory file โดน truncate เหลือ
   0 byte 2 ครั้ง (ครั้งแรกจาก script ที่เปิดไฟล์แบบ write mode ซึ่ง truncate ก่อนเขียน แล้ว write พัง).
   ตั้งใจให้เล็ก: last-good copy อย่างเดียว ไม่มี history/rotation — ถ้าไม่พอค่อยทำ versioning
-- path ของ memory dir ใน hook = token ที่ setup แทนให้; override ได้ด้วย env `CONDUCTOR_MEMORY_DIR`
+- path ของ memory dir ใน hook = path ที่ setup เขียนลงไปตอนติดตั้ง — ค่าเดียวกับที่เขียนใน `AGENTS.md` และ skills
+  (แหล่งเดียว ไม่มี env override) จะย้าย memory dir = ติดตั้งใหม่ (Codex: `-MemoryDir`)
 
 ---
 

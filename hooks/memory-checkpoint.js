@@ -13,7 +13,8 @@
  *   codex  - Feedback lines are always injected (Codex has no auto-memory); no daily log.
  *
  * Paths: agent home = the dir that holds this hooks/ dir (~/.claude or $CODEX_HOME).
- *        Memory dir = $CONDUCTOR_MEMORY_DIR, else the path setup.ps1 / setup-codex.ps1 wrote in below.
+ *        Memory dir = the path setup.ps1 / setup-codex.ps1 baked in below - the same path they
+ *        write into AGENTS.md and the skills, so hooks and instructions never disagree.
  *
  * Hard rules:
  *   - Must complete in <5s. Do NOT wait for child.
@@ -42,7 +43,7 @@ const LOG_DIR = path.join(AGENT_HOME, "memory-checkpoints");
 const EVENTS_LOG = path.join(LOG_DIR, "events.jsonl");
 const DAILY_DIR = path.join(LOG_DIR, "daily");
 // setup.ps1 / setup-codex.ps1 substitute the token at install time.
-const MEMORY_DIR = path.normalize(process.env.CONDUCTOR_MEMORY_DIR || "{{MEMORY_DIR}}");
+const MEMORY_DIR = path.normalize("{{MEMORY_DIR}}");
 const EXTRACT_SCRIPT = path.join(__dirname, "memory-extract.js");
 
 // Canonical mapping: cwd segment → memory file.
@@ -199,9 +200,7 @@ function handleSessionStart(input) {
       "📌 Project memory loaded",
       "File: " + memoryFile,
       "Last verified: " + lastVerified + stalenessNote,
-      "⚠️ If Last verified > 5 days old, RUN VERIFY RECIPE (see project " +
-        (IS_CODEX ? "AGENTS.md" : "CLAUDE.md") +
-        ") before trusting claims.",
+      "⚠️ If Last verified > 5 days old, RUN VERIFY RECIPE (see project AGENTS.md) before trusting claims.",
     ];
 
     if (IS_CODEX) {
@@ -222,9 +221,7 @@ function handleSessionStart(input) {
   } else {
     additionalContext = [
       "📌 No project memory matched cwd: " + cwd,
-      IS_CODEX
-        ? "(canonical mapping in " + path.join(AGENT_HOME, "AGENTS.md") + " → Memory protocol → Project mapping)"
-        : "(canonical mapping in ~/.claude/CLAUDE.md → Memory Update Protocol)",
+      "(canonical mapping in " + path.join(AGENT_HOME, "AGENTS.md") + " → Memory protocol → Project mapping)",
     ].join("\n");
   }
   additionalContext += feedbackIndexBlock(cwd);

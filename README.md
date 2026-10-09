@@ -59,25 +59,27 @@ with a fictional one (`AcmeCorp`, `example.com`, placeholders).
 
 > **Start here → [`docs/00-orientation.md`](docs/00-orientation.md)** · Codex users: [`docs/07-codex.md`](docs/07-codex.md)
 
-> **Language note:** the agent-facing core — `AGENTS.md`, `skills/`, `codex/agents/` — is
-> written in English so every agent reads the same rules. The human guides under `docs/` are
-> written primarily in Thai (the maintainer's working language); the mechanics are
-> language-agnostic.
+> **Language note:** `AGENTS.md`, the skills (`skills/`) and the Codex agent TOMLs
+> (`codex/agents/`) are English - every agent reads the same rules. `MEMORY_SCHEME.md` and
+> `docs/` are Thai reference docs (the maintainer's working language) that agents read on
+> demand, as UTF-8. The mechanics are language-agnostic.
 
 ---
 
 ## Quick start (2 minutes)
 
-Windows / PowerShell shown. Both installers print a dry-run summary first, ask before
-copying, back up or skip anything that already exists, and fill the path tokens
-(`{{AGENT_HOME}}`, `{{MEMORY_DIR}}`, `{{SKILLS_DIR}}`) with your real paths.
+Windows / PowerShell shown (`-ExecutionPolicy Bypass` lets it run under the default execution
+policy without changing it). Both installers print a dry-run summary first (`-DryRun` stops
+there), ask before copying, back up or skip anything that already exists, and fill the path
+tokens (`{{AGENT_HOME}}`, `{{MEMORY_DIR}}`, `{{SKILLS_DIR}}`) with your real paths.
 
 **Claude Code**
 
 ```powershell
 git clone <this-repo-url> claude-conductor
 cd claude-conductor
-.\setup.ps1            # -> ~/.claude (AGENTS.md + CLAUDE.md, settings.json hooks, skills, docs, templates)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+# -> ~/.claude: AGENTS.md + CLAUDE.md, settings.json hooks, skills, docs, templates
 ```
 
 Then start a new Claude Code session — the SessionStart hook loads matching project memory.
@@ -87,7 +89,8 @@ Then start a new Claude Code session — the SessionStart hook loads matching pr
 ```powershell
 git clone <this-repo-url> claude-conductor
 cd claude-conductor
-.\setup-codex.ps1      # -> ~/.codex (AGENTS.md, hooks.json, agents/) + ~/.agents/skills
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-codex.ps1
+# -> ~/.codex: AGENTS.md, hooks.json, agents/  +  ~/.agents/skills
 ```
 
 Then paste the `writable_roots` snippet it prints into `~/.codex/config.toml`, open `codex`,

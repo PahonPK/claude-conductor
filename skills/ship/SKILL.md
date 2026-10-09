@@ -42,7 +42,7 @@ The global AGENTS.md (orchestrator workflow) and the project AGENTS.md (verify r
 ## 5. Deploy -> prod
 
 - Run `<DEPLOY_CMD>` per the deploy recipe in the project AGENTS.md.
-- A container/host shared by several sessions -> check and acquire `SESSION-BOARD.md` §DEPLOY LOCK first (see `docs/03-inter-session.md`).
+- A container/host shared by several sessions -> check and acquire `SESSION-BOARD.md` §DEPLOY LOCK first (see `{{AGENT_HOME}}/docs/03-inter-session.md`).
 
 ## 6. Browser-verify on LIVE (not verified = not done)
 

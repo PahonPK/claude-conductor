@@ -50,7 +50,7 @@ Model names are the maintainer's set - swap in what your account has. The princi
 ## Phase 2 - ANALYZE + ARCHITECT + PLAN (planner)
 
 - **Read the design-lessons registry before designing** - `{{MEMORY_DIR}}/feedback-design-lessons.md` (shape: `examples/memory/feedback-design-lessons.md` in the framework repo; principle: `{{AGENT_HOME}}/docs/06-lessons-learned.md` §E2). Every plan that touches UI / document lifecycle / notifications / client writes / schema / money / auth is checked against it, and the file goes into the brief of a spawned planner too. No file yet -> start from the example and add entries after real incidents.
-- Output humans read (bot messages / documents / UI copy / report layouts) -> show a fully rendered sample with realistic data and get the user's OK before delegating the build (docs/06 A4).
+- Output humans read (bot messages / documents / UI copy / report layouts) -> show a fully rendered sample with realistic data and get the user's OK before delegating the build (`{{AGENT_HOME}}/docs/06-lessons-learned.md` A4).
 - Digest findings -> find tensions/risks/edge cases -> design the architecture -> write the plan as clearly scoped phases.
 - **Confirm the plan with the user before building** (orchestrator step 3 - wait for the go word, e.g. "go" / "ไปเลย").
 - Touching a shared resource -> READ `SESSION-BOARD.md` and lock first (migration timestamp / branch / shared table or RLS / DB function).

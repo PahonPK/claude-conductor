@@ -9,7 +9,8 @@
     Automates the manual steps from the README ("How to adopt it"):
 
       1. Derives your home-path segment (the "C--Users-<name>" form that Claude
-         builds from your home path) from $env:USERPROFILE - nothing is hardcoded.
+         builds from your home path: every character other than A-Z, a-z, 0-9 becomes
+         '-', so C:\Users\john.doe -> C--Users-john-doe) from $env:USERPROFILE.
          Memory dir = <ClaudeHome>\projects\<segment>\memory (Claude's auto-memory dir
          for your home folder).
       2. Copies the System layer (AGENTS.md, CLAUDE.md, MEMORY_SCHEME.md, settings.json,
@@ -20,6 +21,8 @@
          PowerShell and Git Bash alike).
       4. Seeds MEMORY.md and SESSION-BOARD.md into the memory dir - ONLY if absent
          (an existing memory file is never touched, not even with -Force).
+      5. Lists legacy files from older versions (commands/memory-*.md, skills/fable-5/)
+         so you can remove them - it never deletes anything.
 
     SAFETY:
       - Prints a dry-run summary of every action and asks for confirmation before
@@ -46,11 +49,11 @@
     Print the planned actions and exit without changing anything.
 
 .EXAMPLE
-    ./setup.ps1
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
         Dry-run summary, then prompts before copying into ~/.claude.
 
 .EXAMPLE
-    ./setup.ps1 -Force -Yes
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -Force -Yes
         Non-interactive: back up + overwrite existing files, no prompt.
 #>
 [CmdletBinding()]
@@ -63,6 +66,18 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Normalize path parameters before anything is baked into files -----------
+# Relative paths resolve against the current PowerShell location (not the process
+# directory), then [IO.Path]::GetFullPath collapses "..", "." and doubled separators.
+function Resolve-FullPath {
+    param([string]$Path)
+    $abs = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    $full = [System.IO.Path]::GetFullPath($abs)
+    if ($full.Length -gt 3) { $full = $full.TrimEnd('\', '/') }
+    return $full
+}
+$ClaudeHome = Resolve-FullPath $ClaudeHome
+
 # --- Repo root = folder this script lives in -------------------------------
 $RepoRoot = $PSScriptRoot
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
@@ -73,16 +88,16 @@ Write-Host "Repo root   : $RepoRoot"
 Write-Host "Claude home : $ClaudeHome"
 
 # --- Derive the home-path segment (C--Users-<name> style) ------------------
-# Claude turns a home path like C:\Users\alice into the segment C--Users-alice
-# by replacing the drive colon and each path separator with a single dash.
+# Claude turns a home path into its project-dir segment by replacing EVERY character
+# other than A-Z, a-z, 0-9 with a single dash: C:\Users\john.doe -> C--Users-john-doe
+# (drive colon + backslash yield the double dash).
 $HomePath = $env:USERPROFILE
 if (-not $HomePath) {
     Write-Error "Could not read \$env:USERPROFILE - cannot derive your home segment."
     exit 1
 }
-# Replace ':' and '\' and '/' with '-'. A drive colon + backslash naturally
-# yields the documented double dash (C: + \ -> "C-" + "-" = "C--").
-$HomeSegment = ($HomePath -replace '[:\\/]', '-')
+$HomePath = Resolve-FullPath $HomePath
+$HomeSegment = ($HomePath -replace '[^A-Za-z0-9]', '-')
 $MemoryDir   = Join-Path $ClaudeHome (Join-Path "projects" (Join-Path $HomeSegment "memory"))
 $SkillsDir   = Join-Path $ClaudeHome "skills"
 Write-Host "Home segment: $HomeSegment"
@@ -184,6 +199,16 @@ Write-Host "Memory seeds (only if absent):" -ForegroundColor Yellow
 foreach ($s in $Seeds.Values) {
     $state = if (Test-Path -LiteralPath (Join-Path $MemoryDir $s)) { "exists - keep" } else { "create" }
     Write-Host ("  {0} : {1}" -f (Join-Path $MemoryDir $s), $state)
+}
+# Legacy files from older versions of this framework - listed, never deleted.
+$Legacy = @(
+    (Join-Path $ClaudeHome (Join-Path "commands" "memory-save.md")),
+    (Join-Path $ClaudeHome (Join-Path "commands" "memory-recall.md")),
+    (Join-Path $ClaudeHome (Join-Path "skills" "fable-5"))
+) | Where-Object { Test-Path -LiteralPath $_ }
+if (@($Legacy).Count -gt 0) {
+    Write-Host "LEGACY - remove if you no longer need (now skills memory-save / memory-recall / orchestrated-loop):" -ForegroundColor Yellow
+    $Legacy | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
 }
 Write-Host ""
 

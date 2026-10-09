@@ -4,7 +4,7 @@
 
 Every agent-neutral rule lives in `AGENTS.md` (imported above; `setup.ps1` installs both files into `~/.claude/`). This section covers only what is specific to Claude Code.
 
-- **Memory dir = Claude's auto-memory dir of your home folder:** `~/.claude/projects/<slug>/memory/`, where `<slug>` is your home path with the drive colon and each separator replaced by `-` (`C:\Users\you` -> `C--Users-you`). Claude Code auto-loads `MEMORY.md` from the auto-memory dir of the session's cwd, so this global `MEMORY.md` auto-loads only in sessions started at HOME. Every other session gets its Feedback lines from the SessionStart hook.
+- **Memory dir = Claude's auto-memory dir of your home folder:** `~/.claude/projects/<slug>/memory/`, where `<slug>` is your home path with every character other than A-Z, a-z, 0-9 replaced by `-` (`C:\Users\john.doe` -> `C--Users-john-doe`). Claude Code auto-loads `MEMORY.md` from the auto-memory dir of the session's cwd, so this global `MEMORY.md` auto-loads only in sessions started at HOME. Every other session gets its Feedback lines from the SessionStart hook.
 - **Hooks** (`settings.json` -> `~/.claude/hooks/`, all run with `--agent claude`):
   - `memory-checkpoint.js` - SessionStart injects the project memory header, the daily-log tail and the Feedback lines (Feedback skipped when cwd == HOME, because `MEMORY.md` already auto-loads there). PreCompact / SessionEnd append `events.jsonl` and spawn `memory-extract.js`.
   - `memory-extract.js` (Claude only) - parses the transcript and appends the last exchanges to the daily log `~/.claude/memory-checkpoints/daily/YYYY-MM-DD.md`, which `memory-save` reads as an extra source.

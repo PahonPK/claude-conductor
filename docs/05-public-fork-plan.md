@@ -93,7 +93,7 @@ Claude Code และ Codex. ตอน sync บทเรียน/กฎให�
 | plugin skill `/consolidate-memory`, `/product-brainstorming`, `/code-review` (ไม่อยู่ใน repo) | `skills/memory-consolidate/` · brainstorm = ขั้น inline ในลูป · review = role reviewer (Codex: + `/review`) | public repo ห้ามพึ่ง plugin ที่ไม่ได้แจก |
 | `~/.claude/workspaces/<name>/CLAUDE.md` | `<agent home>/workspaces/<name>/AGENTS.md` (`templates/workspace-AGENTS.md.template`) | agent อ่านเองตาม registry ทั้งสองฝั่ง |
 | `<project>/CLAUDE.md` | `<project>/AGENTS.md` + `CLAUDE.md` 1 บรรทัด `@AGENTS.md` (`templates/project-AGENTS.md.template`) | |
-| memory path ใน hooks (hardcode segment) | env `CONDUCTOR_MEMORY_DIR` หรือ path ที่ setup เขียนให้ตอนติดตั้ง + flag `--agent claude\|codex` | agent home = dir แม่ของ `hooks/` |
+| memory path ใน hooks (hardcode segment) | path ที่ setup เขียนให้ตอนติดตั้ง (ค่าเดียวกับใน `AGENTS.md`/skills) + flag `--agent claude\|codex` | agent home = dir แม่ของ `hooks/` |
 | คำสั่ง operative ภาษาไทยใน rules/skills | ภาษาอังกฤษ | docs (คนอ่าน) คงภาษาไทยได้ |
 
 ---

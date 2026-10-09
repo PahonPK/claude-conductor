@@ -150,4 +150,4 @@ Follow the steps and templates in `{{AGENT_HOME}}/MEMORY_SCHEME.md` §Onboarding
 
 ---
 
-*Template for the public claude-conductor (agent-neutral core; Claude Code adds `CLAUDE.md`, Codex adds `codex/`). Replace the AcmeCorp examples with your own. See `docs/00-orientation.md`.*
+*Template for the public claude-conductor (agent-neutral core; Claude Code adds `CLAUDE.md`, Codex adds `codex/`). Replace the AcmeCorp examples with your own. See `{{AGENT_HOME}}/docs/00-orientation.md`.*

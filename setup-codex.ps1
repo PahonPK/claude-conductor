@@ -53,7 +53,7 @@
     Print the planned actions and exit without changing anything.
 
 .EXAMPLE
-    ./setup-codex.ps1
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-codex.ps1
         Dry-run summary, then prompts before installing.
 #>
 [CmdletBinding()]
@@ -71,7 +71,24 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = $PSScriptRoot
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 
+# --- Normalize path parameters before anything is baked into files -----------
+# Relative paths resolve against the current PowerShell location (not the process
+# directory), then [IO.Path]::GetFullPath collapses "..", "." and doubled separators.
+function Resolve-FullPath {
+    param([string]$Path)
+    $abs = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    $full = [System.IO.Path]::GetFullPath($abs)
+    if ($full.Length -gt 3) { $full = $full.TrimEnd('\', '/') }
+    return $full
+}
+$CodexHome  = Resolve-FullPath $CodexHome
+$SkillsHome = Resolve-FullPath $SkillsHome
 if (-not $MemoryDir) { $MemoryDir = Join-Path $CodexHome "conductor-memory" }
+$MemoryDir  = Resolve-FullPath $MemoryDir
+if ($MemoryDir -eq (Join-Path $CodexHome "memories")) {
+    Write-Error "-MemoryDir must not be $CodexHome\memories (that is Codex's own generated-memory feature)."
+    exit 1
+}
 $HooksJson = Join-Path $CodexHome "hooks.json"
 $HooksJsonAlt = Join-Path $CodexHome "hooks.conductor.json"
 
@@ -105,8 +122,14 @@ function Add-Plan {
         $action = if (Test-Path -LiteralPath $DstFile) { "KEEP (memory exists)" } else { "SEED (new)" }
     }
     elseif ($Kind -eq "hooksjson" -and (Test-Path -LiteralPath $DstFile)) {
-        $action = "MERGE BY HAND (hooks.json exists) -> hooks.conductor.json"
-        $DstFile = $HooksJsonAlt
+        if ([System.IO.File]::ReadAllText($DstFile) -match 'hooks[\\/]+memory-checkpoint\.js') {
+            $action = "KEEP (conductor hooks present)"
+        }
+        else {
+            # hooks.json holds other hooks: never touch it, write the conductor hooks beside it.
+            $DstFile = $HooksJsonAlt
+            $action = "MERGE BY HAND -> " + $(if (-not (Test-Path -LiteralPath $DstFile)) { "COPY (new)" } elseif ($Force) { "OVERWRITE (backup first)" } else { "SKIP (exists)" })
+        }
     }
     elseif (Test-Path -LiteralPath $DstFile) {
         $action = if ($Force) { "OVERWRITE (backup first)" } else { "SKIP (exists)" }
@@ -142,7 +165,7 @@ Write-Host "Planned actions (dry run):" -ForegroundColor Yellow
 $plan | Format-Table -AutoSize Rel, Action, Dest | Out-String -Width 400 | Write-Host
 
 $missing = @($plan | Where-Object { $_.Action -eq "MISSING-IN-REPO" })
-$skips   = @($plan | Where-Object { $_.Action -eq "SKIP (exists)" })
+$skips   = @($plan | Where-Object { $_.Action -like "*SKIP (exists)" })
 if ($missing.Count -gt 0) {
     Write-Host "WARNING: missing in the repo, will be skipped:" -ForegroundColor Red
     $missing | ForEach-Object { Write-Host "  - $($_.Rel)" -ForegroundColor Red }
@@ -188,7 +211,7 @@ function Expand-Tokens {
 }
 
 # --- Execute -----------------------------------------------------------------
-$copied = 0; $skipped = 0; $backedUp = 0; $expanded = 0; $seeded = 0
+$copied = 0; $skipped = 0; $backedUp = 0; $expanded = 0; $seeded = 0; $wroteHooksAlt = $false
 foreach ($p in $plan) {
     if ($p.Action -eq "MISSING-IN-REPO" -or $p.Action -like "KEEP*") { continue }
     $dst = $p.Dest
@@ -206,6 +229,7 @@ foreach ($p in $plan) {
     Copy-Item -LiteralPath $p.Src -Destination $dst -Force
     if (Expand-Tokens -File $dst) { $expanded++ }
     if ($p.Kind -eq "seed") { $seeded++ } else { $copied++ }
+    if ($dst -eq $HooksJsonAlt) { $wroteHooksAlt = $true }
 }
 if (-not (Test-Path -LiteralPath $MemoryDir)) { New-Item -ItemType Directory -Path $MemoryDir -Force | Out-Null }
 
@@ -225,10 +249,17 @@ Write-Host ("writable_roots = [""{0}""]" -f $TomlPath)
 Write-Host ""
 Write-Host "   Applies to the workspace-write sandbox. Per-run alternative: codex --add-dir ""$MemoryDir"""
 Write-Host ""
-if (@($plan | Where-Object { $_.Kind -eq "hooksjson" -and $_.Dest -eq $HooksJsonAlt }).Count -gt 0) {
+$hooksPlan = @($plan | Where-Object { $_.Kind -eq "hooksjson" })[0]
+if ($wroteHooksAlt) {
     Write-Host "2. MERGE HOOKS: $HooksJson already existed and was left untouched." -ForegroundColor Yellow
     Write-Host "   The conductor hooks were written to $HooksJsonAlt. Copy its SessionStart and"
     Write-Host "   PostToolUse entries into the matching arrays under ""hooks"" in hooks.json, then delete it."
+}
+elseif ($hooksPlan.Action -like "KEEP*") {
+    Write-Host "2. Conductor hooks already present in $HooksJson - left unchanged."
+}
+elseif ($hooksPlan.Dest -eq $HooksJsonAlt) {
+    Write-Host "2. NOTE: $HooksJson still has no conductor hooks - merge $HooksJsonAlt into it." -ForegroundColor Yellow
 }
 else {
     Write-Host "2. Hooks installed at $HooksJson (if your config.toml also has a [hooks] table, keep one place only)."

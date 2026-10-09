@@ -145,7 +145,7 @@ server พร้อมกัน — คำสั่ง recreate ของ sessio
 
 board กลาง (`SESSION-BOARD.md` ใน memory dir — Claude: `~/.claude/projects/<slug>/memory/` ·
 Codex: `~/.codex/conductor-memory/`) ใช้จองของกลางที่ชนกันได้. setup seed ไฟล์ตั้งต้นให้
-จาก `templates/SESSION-BOARD.md.template` (6 section + ตัวอย่าง row ละ 1 บรรทัด)
+จาก `templates/SESSION-BOARD.md.template` (6 section ว่าง — รูปแบบ + ตัวอย่างอยู่ใน HTML comment ไม่ใช่ state จริง)
 
 > **ไม่ auto-load** — อ่านเฉพาะตอนงานแตะ multi-session project
 

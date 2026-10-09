@@ -53,19 +53,33 @@
 ```powershell
 git clone <this-repo-url> claude-conductor
 cd claude-conductor
-.\setup-codex.ps1 -DryRun    # ดูแผนก่อน ไม่แก้อะไร
-.\setup-codex.ps1            # ติดตั้ง (ถามให้พิมพ์ yes ก่อน)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-codex.ps1 -DryRun   # ดูแผนก่อน ไม่แก้อะไร
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-codex.ps1           # ติดตั้ง (ถามให้พิมพ์ yes ก่อน)
+```
+
+> เรียกผ่าน `powershell -ExecutionPolicy Bypass -File` เพื่อให้รันได้บนเครื่องที่ execution policy ยังเป็นค่า default
+> โดยไม่ต้องไปเปลี่ยน policy ของเครื่อง
+
+คำสั่งที่เหลือในเอกสารนี้ใช้ตัวแปร 2 ตัว — ตั้งครั้งเดียวใน PowerShell ด้วย path ที่ `setup-codex.ps1` พิมพ์ไว้
+(บรรทัด `Codex home` / `Memory dir`) หรือใช้ค่า fallback นี้:
+
+```powershell
+$CodexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { "$env:USERPROFILE\.codex" }   # หรือ path "Codex home" ที่ installer พิมพ์
+$Mem = "$CodexHome\conductor-memory"                                                        # หรือ path "Memory dir" ที่ installer พิมพ์ (ถ้าใช้ -MemoryDir)
 ```
 
 `setup-codex.ps1` ทำ:
 - `AGENTS.md` → `$CODEX_HOME\AGENTS.md` · `MEMORY_SCHEME.md`, `docs\`, `templates\` → `$CODEX_HOME\` (AGENTS.md ชี้ไปหา)
 - `skills\*` → `$HOME\.agents\skills\` · `codex\agents\*.toml` → `$CODEX_HOME\agents\`
 - `hooks\memory-checkpoint.js` + `hooks\memory-guard.js` → `$CODEX_HOME\hooks\` · `codex\hooks.json` → `$CODEX_HOME\hooks.json`
-  (ถ้ามี `hooks.json` อยู่แล้ว **ไม่ทับ** — เขียนเป็น `hooks.conductor.json` แล้วบอกวิธี merge)
-- seed `MEMORY.md` + `SESSION-BOARD.md` ลง `$CODEX_HOME\conductor-memory\` เฉพาะเมื่อยังไม่มี
-- แทน path token ในทุกไฟล์ที่ copy (เขียน UTF-8) · ไฟล์ที่มีอยู่แล้ว = skip (ใช้ `-Force` เพื่อ backup แล้วทับ)
+  (`hooks.json` ที่มี conductor hooks อยู่แล้ว = KEEP ไม่แตะ; `hooks.json` ที่มีแต่ hook อื่น **ไม่ทับ** — เขียน
+  `hooks.conductor.json` ข้าง ๆ แล้วบอกวิธี merge)
+- seed `MEMORY.md` + `SESSION-BOARD.md` (section ว่าง — ตัวอย่างอยู่ใน HTML comment) ลง memory dir เฉพาะเมื่อยังไม่มี
+- แทน path token ในทุกไฟล์ที่ copy (path ทั้งหมดถูก normalize เป็น absolute ก่อน, เขียน UTF-8) · ไฟล์ที่มีอยู่แล้ว = skip
+  (ใช้ `-Force` เพื่อ backup แล้วทับ; memory file ไม่ถูกทับเด็ดขาด)
 
-`setup-codex.ps1` **ไม่แก้ `config.toml`** — มันพิมพ์ snippet ที่กรอก path จริงให้แล้ว เอาไป paste เอง:
+`setup-codex.ps1` **ไม่แก้ `config.toml`** — มันพิมพ์ snippet ที่กรอก path จริงให้แล้ว เอาไป paste เอง
+(หน้าตาประมาณนี้ แต่ใช้ path ที่ installer พิมพ์):
 
 ```toml
 [sandbox_workspace_write]
@@ -76,8 +90,9 @@ writable_roots = ["C:\\Users\\<you>\\.codex\\conductor-memory"]
 - ใช้กับ sandbox แบบ `workspace-write` · permission profiles (beta) ใช้ร่วมกับ `sandbox_mode` ไม่ได้
 - ใน writable root, child dir ชื่อ `.git` `.agents` `.codex` `.aws` เป็น read-only — **ยังไม่ได้ยืนยัน**ว่า root ที่อยู่ใต้
   `~/.codex` เองโดนกฎนี้ไหม → ทดสอบการเขียนจริงใน smoke test ข้อ 8. ถ้าเขียนไม่ได้: (ก) เปิดด้วย
-  `codex --add-dir "$env:USERPROFILE\.codex\conductor-memory"` หรือ (ข) ติดตั้งใหม่ด้วย
-  `.\setup-codex.ps1 -Force -MemoryDir "$env:USERPROFILE\agent-memory"` แล้วแก้ `writable_roots` ตาม
+  `codex --add-dir "$Mem"` หรือ (ข) ติดตั้งใหม่ด้วย
+  `powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-codex.ps1 -Force -MemoryDir "$env:USERPROFILE\agent-memory"`
+  แล้วแก้ `writable_roots` ตาม
 
 **Windows / ภาษาไทย:** Windows PowerShell 5.1 `Get-Content` อ่าน UTF-8 ที่ไม่มี BOM เป็น ANSI code page
 (CP874 บน Windows ไทย) → ไทยเพี้ยน. เปิดไฟล์ด้วย `Get-Content -Encoding UTF8` หรือใช้ `pwsh` (PowerShell 7)
@@ -87,10 +102,11 @@ writable_roots = ["C:\\Users\\<you>\\.codex\\conductor-memory"]
 
 ## 4. Smoke test (ทำตามลำดับ)
 
-1. **ติดตั้ง:** `.\setup-codex.ps1` → สรุปท้ายต้องบอกจำนวนไฟล์ที่ copy + `2 memory seed(s) created` (ครั้งแรก)
-2. **Paste config:** เอา snippet `[sandbox_workspace_write]` ที่ script พิมพ์ไป paste ใน `$env:USERPROFILE\.codex\config.toml` แล้ว save
+1. **ติดตั้ง:** `powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-codex.ps1` → สรุปท้ายต้องบอกจำนวนไฟล์ที่ copy +
+   `2 memory seed(s) created` (ครั้งแรก) → ตั้ง `$CodexHome` / `$Mem` ตาม path ที่มันพิมพ์ (ดู §3)
+2. **Paste config:** เอา snippet `[sandbox_workspace_write]` ที่ script พิมพ์ไป paste ใน `"$CodexHome\config.toml"` แล้ว save
 3. **เตรียมข้อมูลทดสอบ:** เพิ่มบรรทัด Feedback ทดสอบ 1 บรรทัดใต้ `## Feedback` ใน memory index
-   (`notepad "$env:USERPROFILE\.codex\conductor-memory\MEMORY.md"`) ในรูปแบบ
+   (`notepad "$Mem\MEMORY.md"`) ในรูปแบบ
    `- [Smoke test](./feedback-smoke-test.md) — smoke-test line, delete me`
 4. **เปิด codex ใน repo ใดก็ได้** ที่เป็น git repo และ trust แล้ว: `cd C:\path\to\some-repo` → `codex`
 5. **`/hooks`** → ต้องเห็น conductor hook 3 ตัว (`memory-checkpoint.js SessionStart`, `memory-guard.js SessionStart`,
@@ -102,11 +118,13 @@ writable_roots = ["C:\\Users\\<you>\\.codex\\conductor-memory"]
 7. **`/skills`** → ต้องเห็น `memory-save`, `memory-recall`, `memory-consolidate`, `orchestrated-loop`, `ship`
 8. **`$memory-save`** → repo ทดสอบไม่อยู่ใน mapping มันจะถามว่าจะ save ที่ไหน → ตอบให้ save เป็น
    `project-smoke-test.md` ใน memory dir → ตรวจว่าไฟล์เกิดจริง:
-   `Get-ChildItem "$env:USERPROFILE\.codex\conductor-memory"` (ถ้า sandbox ปฏิเสธ → ดู bullet เรื่อง writable root ใน §3)
+   `Get-ChildItem "$Mem"` (ถ้า sandbox ปฏิเสธ → ดู bullet เรื่อง writable root ใน §3)
 9. **`/agents`** → ต้องเห็น `planner`, `reviewer`, `worker-heavy`, `worker-light`
-10. *(optional)* **guard:** ทำให้ `project-smoke-test.md` เหลือ 0 byte
-    (`Clear-Content "$env:USERPROFILE\.codex\conductor-memory\project-smoke-test.md"`) แล้วให้ codex รัน tool อะไรก็ได้
-    → ไฟล์ต้องกลับมา + มีบรรทัดใน `$env:USERPROFILE\.codex\backups\memory-shadow\_restores.log`
+10. *(optional)* **guard:**
+    - (ก) ให้มี shadow ก่อน: หลัง `project-smoke-test.md` เกิดแล้ว ให้ codex รัน tool อะไรก็ได้อีก 1 ครั้ง (หรือปิดแล้ว
+      เปิด codex ใหม่) — guard จะสร้าง shadow ของไฟล์ที่มีเนื้อหาเท่านั้น
+    - (ข) ทำให้ไฟล์เหลือ 0 byte: `Clear-Content "$Mem\project-smoke-test.md"` แล้วให้ codex รัน tool อะไรก็ได้
+    - (ค) ไฟล์ต้องกลับมา + มีบรรทัดใหม่ใน `Get-Content -Encoding UTF8 "$CodexHome\backups\memory-shadow\_restores.log"`
 11. **เก็บกวาด:** ลบ `project-smoke-test.md` และบรรทัด Smoke test ใน `MEMORY.md`
 
 ---
@@ -114,8 +132,8 @@ writable_roots = ["C:\\Users\\<you>\\.codex\\conductor-memory"]
 ## 5. Troubleshooting
 
 - **hook ไม่ทำงาน** → `/hooks` ยังไม่ trust / แก้ไฟล์หลัง trust (ต้อง trust ใหม่) / `node` ไม่อยู่ใน PATH
-- **context ที่ inject ถูกตัด** → `additionalContextLimit` ใน `hooks.json` ตั้งไว้ 16000 (หน่วยไม่ได้ document) —
-  เพิ่มค่า หรือใช้ `0` (= ส่งเต็ม) แล้ว trust ใหม่
+- **context ที่ inject ถูกตัด** → เพิ่มค่า `additionalContextLimit` ใน `hooks.json` (ตั้งไว้ 16000; หน่วยไม่ได้ document)
+  แล้ว trust ใหม่
 - **`AGENTS.md` ไม่ถูกอ่าน** → มี `AGENTS.override.md` ใน `$CODEX_HOME` อยู่ (ชนะเสมอ) หรือ project ยังไม่ trusted (project doc ถูกข้าม)
 - **เพิ่ม project ใหม่** → เพิ่มแถวใน Project mapping ของ `$CODEX_HOME\AGENTS.md` **และ** `PROJECT_MEMORY_MAP`
   ใน `$CODEX_HOME\hooks\memory-checkpoint.js` (แก้ hook = trust ใหม่)

@@ -32,8 +32,8 @@
  *   codex  - a restore notice is emitted as {"hookSpecificOutput":{"hookEventName":
  *            <EventName>,"additionalContext":...}}, valid for SessionStart and PostToolUse.
  *   Silent (no output) when nothing was restored, for both agents.
- * PATHS. Memory dir = $CONDUCTOR_MEMORY_DIR, else the path setup.ps1 / setup-codex.ps1
- * wrote in below. Shadow dir = <agent home>/backups/memory-shadow, where agent home is
+ * PATHS. Memory dir = the path setup.ps1 / setup-codex.ps1 baked in below (the same path
+ * they write into AGENTS.md and the skills). Shadow dir = <agent home>/backups/memory-shadow, where agent home is
  * the dir that holds this hooks/ dir (~/.claude or $CODEX_HOME).
  */
 
@@ -47,7 +47,7 @@ const EVENT_NAME =
   ARGS.find((a, i) => !a.startsWith("--") && !(AGENT_FLAG >= 0 && i === AGENT_FLAG + 1)) || "SessionStart";
 
 // setup.ps1 / setup-codex.ps1 substitute the token at install time.
-const MEM = path.normalize(process.env.CONDUCTOR_MEMORY_DIR || "{{MEMORY_DIR}}");
+const MEM = path.normalize("{{MEMORY_DIR}}");
 const SHADOW = path.join(path.dirname(__dirname), "backups", "memory-shadow");
 
 function main() {
