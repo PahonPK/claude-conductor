@@ -6,7 +6,7 @@ type: project
 originSessionId: <uuid — first session that created this memory>
 ---
 **Last verified:** YYYY-MM-DD @ <commit>
-**Verify rule:** Re-verify if older than 5 days. Recipe in project CLAUDE.md.
+**Verify rule:** Re-verify if older than 5 days or the commit != HEAD. Recipe in the project AGENTS.md.
 
 ## Project: <Project Name>
 
@@ -31,10 +31,11 @@ originSessionId: <uuid — first session that created this memory>
 
 <!--
 Notes:
-- เก็บไฟล์นี้ที่ ~/.claude/projects/C--Users-you/memory/project-<name>.md
-- Size budget: ≤ 40 KB (mega-project ≤ 120 KB) — เกินให้ย้าย history ไป project-<name>-archive.md
-- เขียนเนื้อหาเป็น English (ประหยัด token) — คงภาษาเดิมเฉพาะ term ที่แปลแล้วความหมายเพี้ยน
-- `Last verified` = machine-bump ตอน /memory-save (date + `git rev-parse HEAD`) ห้ามแก้มือ
-- หลัง create ต้อง: (1) add entry ใน MEMORY.md, (2) add cwd mapping row ใน ~/.claude/CLAUDE.md, (3) create project CLAUDE.md
-- ดู docs/04-onboarding-new-project.md
+- Save this file as {{MEMORY_DIR}}/project-<name>.md
+- Size budget: <= 40 KB (mega-project <= 120 KB) - over budget, move history to project-<name>-archive.md
+- Write the content in English (token-cheap) - keep an original-language term only where translation distorts it
+- `Last verified` = machine-bumped by the memory-save skill (date + `git rev-parse HEAD`); never edit it by hand
+- After creating it: (1) add an entry to MEMORY.md, (2) add the cwd mapping row to the global AGENTS.md
+  (and PROJECT_MEMORY_MAP in hooks/memory-checkpoint.js), (3) create the project AGENTS.md
+- See docs/04-onboarding-new-project.md
 -->

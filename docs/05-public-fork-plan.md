@@ -10,7 +10,7 @@
 
 แยก **System layer (กลไก)** ออกจาก **Knowledge layer (business data)** เพื่อให้:
 - คนอื่นเอา *framework* ไปใช้กับธุรกิจตัวเองได้ โดยไม่เห็นข้อมูลส่วนตัวของ maintainer
-- maintainer ยังเก็บ private instance (พร้อม `memory/` + `workspaces/` จริง) ไว้ใช้งานต่อ
+- maintainer ยังเก็บ private instance (พร้อม memory dir + `workspaces/` จริง) ไว้ใช้งานต่อ
 
 > หลักการ: **public fork ไม่มี Layer 2/3 เลย** — มีแค่ Layer 1 + docs + templates +
 > `examples/` ที่เป็นข้อมูลสมมติล้วน
@@ -20,17 +20,23 @@
 ## (a) เลือกอะไรเข้า / ตัดอะไรออก
 
 **เก็บ (include) — Layer 1 + docs + templates:**
-- `CLAUDE.md` (genericized), `MEMORY_SCHEME.md`, `commands/`, `hooks/`, `skills/`, `settings.json`
-  (skill ที่ผูกกับ domain ธุรกิจ → genericize ด้วย `{{PLACEHOLDER}}` ได้ค่อยเข้า ไม่งั้นตัดทิ้ง)
+- `AGENTS.md` (genericized, ภาษาอังกฤษ, path เป็น token), `CLAUDE.md` (Claude adapter), `codex/` (Codex adapter),
+  `MEMORY_SCHEME.md`, `skills/`, `hooks/`, `settings.json`, `setup.ps1`, `setup-codex.ps1`
+  (skill ที่ผูกกับ domain ธุรกิจ → genericize ด้วย placeholder `<LIKE_THIS>` ได้ค่อยเข้า ไม่งั้นตัดทิ้ง)
 - `docs/` ทั้งหมด (genericize ตัวอย่างที่อ้างธุรกิจจริง)
 - `templates/` ทั้งหมด
 - `examples/` (สร้างใหม่ — instance สมมติที่กรอกครบ)
 
 **ตัดทิ้ง (drop) — Layer 2/3:**
-- `memory/` ทั้งโฟลเดอร์ (business state ล้วน)
+- memory dir ทั้งโฟลเดอร์ (business state ล้วน)
 - `workspaces/` ทั้งโฟลเดอร์ (business context ล้วน)
 - `.env` / credentials / `.git` ของ private repo
 - README เดิม (เขียนใหม่สำหรับ public audience)
+
+> **Placeholder 2 แบบ ห้ามปนกัน:** path token ของ setup = ชื่อ AGENT_HOME / MEMORY_DIR / SKILLS_DIR ครอบด้วยวงเล็บปีกกาคู่
+> สงวนไว้ให้ setup script แทนตอนติดตั้งเท่านั้น · ค่าที่ user ต้องกรอกเอง ใช้ `<LIKE_THIS>`
+> (ตรวจหลังติดตั้งได้ว่าแทนครบ: grep หาวงเล็บปีกกาคู่ในไฟล์ที่ติดตั้งต้องได้ 0) — เอกสารที่ถูกติดตั้ง (`docs/`, `MEMORY_SCHEME.md`)
+> ใช้ token ได้เฉพาะตรงที่หมายถึง path จริง ห้ามใช้ตอน *อธิบาย* token
 
 ---
 
@@ -41,11 +47,11 @@
 
 | ประเภทข้อมูลจริง | แทนด้วย |
 |---|---|
-| VPS / server IP (`\d+.\d+.\d+.\d+`) | `{{VPS_IP}}` |
-| domains จริง | `{{DOMAIN}}` หรือ `app.example.com` |
-| brand / company names (ทุกการสะกด ทั้งไทย/อังกฤษ) | `{{WORKSPACE}}` / `AcmeCorp` / `Acme` |
+| VPS / server IP (`\d+.\d+.\d+.\d+`) | `<VPS_IP>` |
+| domains จริง | `<DOMAIN>` หรือ `app.example.com` |
+| brand / company names (ทุกการสะกด ทั้งไทย/อังกฤษ) | `<WORKSPACE>` / `AcmeCorp` / `Acme` |
 | person names | generic role เช่น `Owner` |
-| OS username / home path (เช่น path segment ที่ derive จาก home) | `<YOUR_HOME>` / `C--Users-you` |
+| OS username / home path / path ใน agent home | path token ของ setup (AGENT_HOME / MEMORY_DIR / SKILLS_DIR) หรือ `C--Users-you` ในคำอธิบาย |
 | commit hashes / email / API tokens / keys | ลบ หรือ `<placeholder>` |
 
 > ⚠️ regex อย่างเดียวไม่พอ — ชื่อแบรนด์สะกดได้หลายแบบ (ไทย/อังกฤษ/ตัวพิมพ์เล็กใหญ่)
@@ -56,10 +62,11 @@
 ## (c) โฟลเดอร์ `examples/`
 
 แทนที่ workspace/memory จริงด้วย **instance สมมติที่กรอกครบ** เพื่อให้คนอ่านเห็นว่า
-เวลาใช้จริงหน้าตาเป็นยังไง — ใช้ค่า fictional ล้วน (AcmeCorp, example.com, `{{...}}`):
-- `examples/workspaces/acme-corp/CLAUDE.md` — workspace ตัวอย่าง
+เวลาใช้จริงหน้าตาเป็นยังไง — ใช้ค่า fictional ล้วน (AcmeCorp, example.com, `<...>`):
+- `examples/workspaces/acme-corp/AGENTS.md` — workspace ตัวอย่าง
 - `examples/memory/MEMORY.md` — index ตัวอย่าง
 - `examples/memory/project-acme-web.md` — memory file ตัวอย่างที่กรอกครบ
+- `examples/memory/feedback-*.md` — feedback lesson ตัวอย่าง
 
 ---
 
@@ -72,6 +79,25 @@ placeholder), email/token/commit-hash, OS username / home-path segment. **ต้
 
 ---
 
+## (e) Sync mapping: private instance (live) → public repo
+
+private instance ของ maintainer รันบน Claude Code และ**ยังใช้โครงเดิม**; public repo ถูกจัดใหม่ให้ใช้ได้ทั้ง
+Claude Code และ Codex. ตอน sync บทเรียน/กฎใหม่จาก live เข้ามา ให้ map ตามนี้:
+
+| ใน private instance (live) | ใน public repo | หมายเหตุ |
+|---|---|---|
+| `~/.claude/CLAUDE.md` — ส่วน rules ที่ไม่ผูก agent (Role, Quality, Orchestrator, Registry, Memory, Inter-session, Per-project, Onboarding) | `AGENTS.md` | แปลเป็นภาษาอังกฤษ, path → token, ตัวอย่าง → AcmeCorp |
+| `~/.claude/CLAUDE.md` — ส่วนที่ผูก Claude (auto-memory slug, hooks, EnterWorktree, Agent `model:`, `/name`) | `CLAUDE.md` §Claude Code specifics | ส่วนนี้เท่านั้นที่พูดถึงกลไก Claude |
+| skill `fable-5` (route ตามชื่อ model) | `skills/orchestrated-loop/` | เขียนเป็น **role** (planner / heavy worker / light worker / reviewer) + ตาราง map role → Claude model / Codex agent |
+| `commands/memory-save.md`, `commands/memory-recall.md` (slash command) | `skills/memory-save/`, `skills/memory-recall/` | Codex ถอด custom prompts แล้ว → skill ใช้ได้ทั้งสองฝั่ง; ขั้น daily log = "ถ้ามี (Claude hook เท่านั้น)" |
+| plugin skill `/consolidate-memory`, `/product-brainstorming`, `/code-review` (ไม่อยู่ใน repo) | `skills/memory-consolidate/` · brainstorm = ขั้น inline ในลูป · review = role reviewer (Codex: + `/review`) | public repo ห้ามพึ่ง plugin ที่ไม่ได้แจก |
+| `~/.claude/workspaces/<name>/CLAUDE.md` | `<agent home>/workspaces/<name>/AGENTS.md` (`templates/workspace-AGENTS.md.template`) | agent อ่านเองตาม registry ทั้งสองฝั่ง |
+| `<project>/CLAUDE.md` | `<project>/AGENTS.md` + `CLAUDE.md` 1 บรรทัด `@AGENTS.md` (`templates/project-AGENTS.md.template`) | |
+| memory path ใน hooks (hardcode segment) | env `CONDUCTOR_MEMORY_DIR` หรือ path ที่ setup เขียนให้ตอนติดตั้ง + flag `--agent claude\|codex` | agent home = dir แม่ของ `hooks/` |
+| คำสั่ง operative ภาษาไทยใน rules/skills | ภาษาอังกฤษ | docs (คนอ่าน) คงภาษาไทยได้ |
+
+---
+
 ## สรุป checklist
 
 - [x] สร้าง repo แยกสำหรับ public fork
@@ -79,4 +105,5 @@ placeholder), email/token/commit-hash, OS username / home-path segment. **ต้
 - [x] genericize ทุกไฟล์ (ตาราง b) + manual review
 - [x] สร้าง `examples/` (fictional AcmeCorp)
 - [x] เขียน README ใหม่สำหรับ public audience
+- [x] แยก agent-neutral core (`AGENTS.md` + skills) ออกจาก adapter (Claude: `CLAUDE.md` + `settings.json` · Codex: `codex/`) — ตาราง (e)
 - [x] รัน final allowlist scan (d) — 0 hit

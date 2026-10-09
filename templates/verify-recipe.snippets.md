@@ -1,6 +1,6 @@
 # Verify Recipe Snippets (per stack)
 
-> Paste the matching block into a project CLAUDE.md `## Memory Persistence →
+> Paste the matching block into a project AGENTS.md `## Memory Persistence →
 > Verify recipe` section. A verify recipe = 3–7 **read-only** commands that check
 > whether the project memory still matches reality. Run when `Last verified` > 5 days.
 > Source: `../MEMORY_SCHEME.md` §Verify recipe examples per stack.
