@@ -4,7 +4,16 @@
  * Stage 1 (hot path): sync entry point for SessionStart / PreCompact / SessionEnd hooks.
  *
  * - SessionStart: read project memory file (per cwd mapping), emit additionalContext.
- * - PreCompact / SessionEnd: append events.jsonl, spawn detached memory-extract.js worker.
+ * - PreCompact / SessionEnd: append events.jsonl, spawn detached memory-extract.js worker
+ *   (Claude Code only - Codex wires SessionStart only).
+ *
+ * Usage: node memory-checkpoint.js <EventName> [--agent claude|codex]   (default: claude)
+ *   claude - Feedback lines are skipped when cwd == HOME (Claude auto-loads MEMORY.md there);
+ *            the daily-log tail is included.
+ *   codex  - Feedback lines are always injected (Codex has no auto-memory); no daily log.
+ *
+ * Paths: agent home = the dir that holds this hooks/ dir (~/.claude or $CODEX_HOME).
+ *        Memory dir = $CONDUCTOR_MEMORY_DIR, else the path setup.ps1 / setup-codex.ps1 wrote in below.
  *
  * Hard rules:
  *   - Must complete in <5s. Do NOT wait for child.
@@ -23,24 +32,22 @@ const os = require("os");
 const { spawn } = require("child_process");
 
 const HOME = os.homedir();
-const LOG_DIR = path.join(HOME, ".claude", "memory-checkpoints");
+const ARGS = process.argv.slice(2);
+const AGENT_FLAG = ARGS.indexOf("--agent");
+const IS_CODEX = AGENT_FLAG >= 0 && ARGS[AGENT_FLAG + 1] === "codex";
+const EVENT_NAME =
+  ARGS.find((a, i) => !a.startsWith("--") && !(AGENT_FLAG >= 0 && i === AGENT_FLAG + 1)) || "Unknown";
+const AGENT_HOME = path.dirname(__dirname);
+const LOG_DIR = path.join(AGENT_HOME, "memory-checkpoints");
 const EVENTS_LOG = path.join(LOG_DIR, "events.jsonl");
 const DAILY_DIR = path.join(LOG_DIR, "daily");
-// NOTE: the "C--Users-you" segment is derived from your home path
-// (Claude replaces separators/colon with '-', e.g. C:\Users\you -> C--Users-you).
-// Change it to match YOUR home path on first setup.
-const MEMORY_DIR = path.join(
-  HOME,
-  ".claude",
-  "projects",
-  "C--Users-you",
-  "memory",
-);
-const EXTRACT_SCRIPT = path.join(HOME, ".claude", "hooks", "memory-extract.js");
+// setup.ps1 / setup-codex.ps1 substitute the token at install time.
+const MEMORY_DIR = path.normalize(process.env.CONDUCTOR_MEMORY_DIR || "{{MEMORY_DIR}}");
+const EXTRACT_SCRIPT = path.join(__dirname, "memory-extract.js");
 
 // Canonical mapping: cwd segment → memory file.
 // EXAMPLE rows — replace with your own projects (keep in sync with the
-// §Project mapping table in CLAUDE.md). See examples/ for a filled-in instance.
+// §Project mapping table in AGENTS.md). See examples/ for a filled-in instance.
 const PROJECT_MEMORY_MAP = {
   "acme-erp": "project-acme-erp.md",
   "acme-web": "project-acme-web.md",
@@ -123,9 +130,10 @@ function extractLastVerified(text) {
 
 // Feedback lessons are indexed in the global MEMORY.md, which Claude Code only
 // auto-loads when the session cwd is HOME — inject them into every other session.
+// Codex never auto-loads it, so Codex always gets them.
 function feedbackIndexBlock(cwd) {
   try {
-    if (path.resolve(cwd).toLowerCase() === path.resolve(HOME).toLowerCase()) return "";
+    if (!IS_CODEX && path.resolve(cwd).toLowerCase() === path.resolve(HOME).toLowerCase()) return "";
     const lines = fs
       .readFileSync(path.join(MEMORY_DIR, "MEMORY.md"), "utf8")
       .split(/\r?\n/)
@@ -187,29 +195,36 @@ function handleSessionStart(input) {
       stalenessNote = " (⚠️ no Last verified field — run verify recipe)";
     }
 
-    const todayLog = todayDailyPath();
-    const yLog = yesterdayDailyPath();
-    let dailyTail = "";
-    if (fs.existsSync(todayLog)) {
-      dailyTail = readLastLines(todayLog, 40);
-    } else if (fs.existsSync(yLog)) {
-      dailyTail = readLastLines(yLog, 40);
-    }
-    const dailyBlock = dailyTail.trim() ? dailyTail : "(no recent log)";
-
-    additionalContext = [
+    const header = [
       "📌 Project memory loaded",
       "File: " + memoryFile,
       "Last verified: " + lastVerified + stalenessNote,
-      "⚠️ If Last verified > 5 days old, RUN VERIFY RECIPE (see project CLAUDE.md) before trusting claims.",
-      "",
-      "Recent activity (daily log):",
-      dailyBlock,
-    ].join("\n");
+      "⚠️ If Last verified > 5 days old, RUN VERIFY RECIPE (see project " +
+        (IS_CODEX ? "AGENTS.md" : "CLAUDE.md") +
+        ") before trusting claims.",
+    ];
+
+    if (IS_CODEX) {
+      // No daily log on Codex (memory-extract.js is Claude-only).
+      additionalContext = header.join("\n");
+    } else {
+      const todayLog = todayDailyPath();
+      const yLog = yesterdayDailyPath();
+      let dailyTail = "";
+      if (fs.existsSync(todayLog)) {
+        dailyTail = readLastLines(todayLog, 40);
+      } else if (fs.existsSync(yLog)) {
+        dailyTail = readLastLines(yLog, 40);
+      }
+      const dailyBlock = dailyTail.trim() ? dailyTail : "(no recent log)";
+      additionalContext = header.concat(["", "Recent activity (daily log):", dailyBlock]).join("\n");
+    }
   } else {
     additionalContext = [
       "📌 No project memory matched cwd: " + cwd,
-      "(canonical mapping in ~/.claude/CLAUDE.md → Memory Update Protocol)",
+      IS_CODEX
+        ? "(canonical mapping in " + path.join(AGENT_HOME, "AGENTS.md") + " → Memory protocol → Project mapping)"
+        : "(canonical mapping in ~/.claude/CLAUDE.md → Memory Update Protocol)",
     ].join("\n");
   }
   additionalContext += feedbackIndexBlock(cwd);
@@ -254,7 +269,7 @@ function handleCheckpointEvent(eventName, input, rawJson) {
 }
 
 function main() {
-  const eventName = process.argv[2] || "Unknown";
+  const eventName = EVENT_NAME;
   let raw = "";
   let input = {};
   try {

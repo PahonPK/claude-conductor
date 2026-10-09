@@ -11,7 +11,8 @@
  * hand-made backup happened to exist.
  *
  * WHAT IT DOES, on SessionStart and on every PostToolUse for a tool that can
- * write files (wired in settings.json):
+ * write files (Claude: settings.json, matcher Write|Edit|Bash; Codex: hooks.json,
+ * no matcher = every tool):
  *   - any memory *.md with size > 0        -> refresh its shadow copy
  *   - any memory *.md with size 0, whose shadow is non-empty -> RESTORE it
  *     and print one line so the session is told
@@ -25,27 +26,29 @@
  * over. Shadows are refreshed only from non-empty sources, so a truncation can
  * never propagate into the shadow. Every failure is swallowed: a hook that
  * throws must not break the tool call that triggered it.
+ *
+ * USAGE. node memory-guard.js [<EventName>] [--agent claude|codex]  (default: claude)
+ *   claude - a restore notice is printed as plain text (unchanged behaviour).
+ *   codex  - a restore notice is emitted as {"hookSpecificOutput":{"hookEventName":
+ *            <EventName>,"additionalContext":...}}, valid for SessionStart and PostToolUse.
+ *   Silent (no output) when nothing was restored, for both agents.
+ * PATHS. Memory dir = $CONDUCTOR_MEMORY_DIR, else the path setup.ps1 / setup-codex.ps1
+ * wrote in below. Shadow dir = <agent home>/backups/memory-shadow, where agent home is
+ * the dir that holds this hooks/ dir (~/.claude or $CODEX_HOME).
  */
 
 const fs = require("fs");
 const path = require("path");
 
-// NOTE: the "C--Users-you" segment is derived from your home path
-// (Claude replaces separators/colon with '-', e.g. C:\Users\you -> C--Users-you).
-// setup.ps1 substitutes it automatically; change it by hand if you install manually.
-const MEM = path.join(
-  process.env.USERPROFILE || process.env.HOME || "",
-  ".claude",
-  "projects",
-  "C--Users-you",
-  "memory"
-);
-const SHADOW = path.join(
-  process.env.USERPROFILE || process.env.HOME || "",
-  ".claude",
-  "backups",
-  "memory-shadow"
-);
+const ARGS = process.argv.slice(2);
+const AGENT_FLAG = ARGS.indexOf("--agent");
+const IS_CODEX = AGENT_FLAG >= 0 && ARGS[AGENT_FLAG + 1] === "codex";
+const EVENT_NAME =
+  ARGS.find((a, i) => !a.startsWith("--") && !(AGENT_FLAG >= 0 && i === AGENT_FLAG + 1)) || "SessionStart";
+
+// setup.ps1 / setup-codex.ps1 substitute the token at install time.
+const MEM = path.normalize(process.env.CONDUCTOR_MEMORY_DIR || "{{MEMORY_DIR}}");
+const SHADOW = path.join(path.dirname(__dirname), "backups", "memory-shadow");
 
 function main() {
   if (!fs.existsSync(MEM)) return;
@@ -108,7 +111,15 @@ function main() {
     // restore fired on a Bash call and printed nothing visible), so the durable
     // record is the log — that is what makes a silent restore auditable after
     // the fact. Grep it whenever a memory file looks wrong.
-    console.log(msg);
+    if (IS_CODEX) {
+      process.stdout.write(
+        JSON.stringify({
+          hookSpecificOutput: { hookEventName: EVENT_NAME, additionalContext: msg },
+        })
+      );
+    } else {
+      console.log(msg);
+    }
     try {
       fs.appendFileSync(
         path.join(SHADOW, "_restores.log"),

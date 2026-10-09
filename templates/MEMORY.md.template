@@ -1,0 +1,18 @@
+# Memory index
+
+> Index of every memory file in this dir (`{{MEMORY_DIR}}`), grouped by workspace.
+> Rules (global AGENTS.md, Memory protocol): <= 3 lines per entry (current state + critical pending only),
+> <= 20 KB total, never changelog/commit history (that lives in the project files). Written in English.
+> Seeded by setup - replace the placeholder entry below with your real projects.
+
+---
+
+## <workspace-name> workspace
+
+- [<Project Name>](./project-<name>.md) — <current state in one line>. **Pending:** <critical item>.
+
+## Feedback (global lessons - apply to every project)
+
+<!-- One line per lesson file, shape: - [Title](<link>) — <one-line hook>
+     where <link> is ./feedback-<topic>.md (a file in this dir; see examples/memory/feedback-*.md for the shape).
+     The SessionStart hook injects every line of this file that links a ./feedback-*.md file. -->
