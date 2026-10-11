@@ -1,7 +1,8 @@
 # AcmeCorp Workspace — Corporate / HQ
 
 > EXAMPLE workspace context (100% fictional). This shows what a real
-> `~/.claude/workspaces/<name>/CLAUDE.md` looks like once filled in.
+> `<agent home>/workspaces/<name>/AGENTS.md` looks like once filled in
+> (agent home = `~/.claude` for Claude Code, `~/.codex` for Codex).
 >
 > Workspace นี้ครอบงาน **ระดับ corporate** ของ AcmeCorp Group:
 > โรงงาน, group strategy, ระบบ ERP, automation, B2B outreach.
@@ -37,7 +38,7 @@
 
 ### Acme Snacks
 - **Focus:** Consumer snack, retail D2C
-- **Workspace:** `~/.claude/workspaces/acme-snacks/CLAUDE.md`
+- **Workspace:** `<agent home>/workspaces/acme-snacks/AGENTS.md`
 
 ---
 
@@ -81,7 +82,7 @@
 
 > สถานะปัจจุบันของแต่ละ project → ดู one-liner ใน `MEMORY.md` index (single source of truth)
 
-Memory base: `~/.claude/projects/C--Users-you/memory/`
+Memory base: the memory dir defined in the global AGENTS.md
 
 ---
 

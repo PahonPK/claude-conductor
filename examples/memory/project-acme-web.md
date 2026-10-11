@@ -6,7 +6,7 @@ type: project
 originSessionId: 00000000-0000-0000-0000-000000000000
 ---
 **Last verified:** YYYY-MM-DD @ <commit>
-**Verify rule:** Re-verify if older than 5 days. Recipe in project CLAUDE.md.
+**Verify rule:** Re-verify if older than 5 days or the commit != HEAD. Recipe in the project AGENTS.md.
 
 ## Project: Acme Snacks Website
 
@@ -15,7 +15,7 @@ originSessionId: 00000000-0000-0000-0000-000000000000
 **Goal:** Brand website where customers can browse all products, read the brand story, find buying channels, and where marketing can add blog posts via a GUI CMS. SEO + AEO optimized.
 
 > EXAMPLE FILE — all content is fictional. Use as a shape reference for a real
-> `~/.claude/projects/C--Users-you/memory/project-<name>.md`.
+> `<memory dir>/project-<name>.md`.
 
 ### Current Status (as of YYYY-MM-DD)
 - **LIVE ✅** at https://snacks.example.com

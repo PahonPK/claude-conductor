@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-checkpoint.js\" SessionStart --agent codex",
+            "statusMessage": "Loading conductor memory",
+            "additionalContextLimit": 16000,
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-guard.js\" SessionStart --agent codex",
+            "statusMessage": "Checking memory files",
+            "additionalContextLimit": 8000,
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-guard.js\" PostToolUse --agent codex",
+            "additionalContextLimit": 8000,
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+# AGENTS.md - <Workspace Display Name> workspace
+
+> Business context for the <name> workspace. Lives at `{{AGENT_HOME}}/workspaces/<name>/AGENTS.md`.
+> Top-level rules live in the global AGENTS.md. Agents read this file when a topic touches
+> this workspace's trigger keywords (Workspace registry) - it is not auto-loaded.
+
+---
+
+## Identity / Scope
+- **What this workspace covers:** <corporate HQ | brand | separate business | ...>
+- **Voice / tone:** <e.g. professional B2B | playful D2C retail | hospitality warm>
+- **Trigger keywords:** <keyword1>, <keyword2>, ... (must match the row in the global AGENTS.md §Workspace registry)
+
+## Projects in this workspace
+| Project | Memory file | Status |
+|---|---|---|
+| <Project A> | `{{MEMORY_DIR}}/project-<a>.md` | <active/done> |
+| ... | ... | ... |
+
+## Cross-reference rules
+- Inherits from another workspace? -> **explicit read** only (workspaces do NOT
+  auto-inherit). Link the parent workspace file here if relevant:
+  - e.g. need production/certs context -> read `{{AGENT_HOME}}/workspaces/<parent>/AGENTS.md`
+- <any workspace-specific conventions or constraints>
+
+<!--
+Onboarding a new workspace (per MEMORY_SCHEME.md §Onboarding new workspace):
+1. create the dir workspaces/<name>/ under the agent home
+2. create this file
+3. add a row (+ trigger keywords) to the global AGENTS.md §Workspace registry
+4. add a section to MEMORY.md
+5. create the first project (templates/project-memory.md.template + project-AGENTS.md.template)
+-->

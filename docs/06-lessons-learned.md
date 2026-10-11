@@ -2,12 +2,12 @@
 
 > บทเรียนจากการใช้ framework นี้ทำงานจริงหลายเดือนใน private instance ของ maintainer —
 > ถอดชื่อ/วันที่/ระบบจริงออกหมด เหลือแค่ **ปัญหา → กฎ → วิธีใช้**
-> *(Last updated: 2026-10-05)*
+> *(Last updated: 2026-10-09)*
 >
 > ใน private instance แต่ละข้อคือ **feedback memory file** หนึ่งไฟล์
-> (`~/.claude/projects/C--Users-you/memory/feedback-<topic>.md` — ดูรูปแบบที่
+> (`<memory dir>/feedback-<topic>.md` — ดูรูปแบบที่
 > `../examples/memory/feedback-testing-standard.md`). ข้อที่เป็น hard rule จริงถูก promote
-> เป็น one-liner ใน `../CLAUDE.md` §Quality Standards แล้ว — ที่เหลืออ่านที่นี่เมื่อเจอสถานการณ์ตรงกัน
+> เป็น one-liner ใน `../AGENTS.md` §Hard rules แล้ว — ที่เหลืออ่านที่นี่เมื่อเจอสถานการณ์ตรงกัน
 >
 > **หลักการเพิ่มบทเรียน:** เพิ่มเฉพาะเมื่อมี incident จริง (ไม่เดาล่วงหน้า — ตาม §ห้าม over-engineer) ·
 > เขียนเป็น *class* ของปัญหา ไม่ใช่เคสเดียว · ≤ 4 บรรทัดต่อข้อ
@@ -16,7 +16,7 @@
 
 ## A. Verification & testing
 
-**A1. Test honesty — อย่าบอกว่าผ่านถ้าทดสอบแค่ผิว** *(promoted → CLAUDE.md)*
+**A1. Test honesty — อย่าบอกว่าผ่านถ้าทดสอบแค่ผิว** *(promoted → AGENTS.md)*
 - **ปัญหา:** รายงานว่า "login test ผ่าน" แต่จริง ๆ ทดสอบแค่ว่าหน้า render — การ sign-in จริงกับ DB ไม่เคยถูกเรียก user เจอ bug เองหลังรัน migration → ความเชื่อใจหาย
 - **กฎ:** feature ที่พึ่ง service ภายนอก (auth, DB) ห้าม mark ว่าผ่านจนกว่าจะรัน end-to-end จริงสำเร็จ · ระบุเสมอว่า *ทดสอบอะไร และไม่ได้ทดสอบอะไร*
 - **วิธีใช้:** รายงานผลเป็น 2 ส่วน "verified: … / not verified: … (เพราะ …)" · setup DB เสร็จ → รัน e2e ทันทีก่อนบอกเสร็จ
@@ -48,26 +48,26 @@
 
 **A7. Integration/workflow config ต้อง validate กับ version ของ API ปลายทาง**
 - **ปัญหา:** deploy workflow automation ชุดใหญ่พร้อมกัน แล้วเจอ node หลายตัว param ผิด format ของ version นั้น, update ผ่าน API ไปเป็นแค่ draft ไม่ได้ publish, PATCH แล้ว credential binding หลุดเพราะไม่ได้ส่ง field นั้นไป
-- **กฎ:** เป็นกรณีเฉพาะของ CLAUDE.md §Quality Standards "ก่อน deploy/publish ต้อง validate เสมอ + ดู execution log" — เพิ่มเติม: เช็ค format ของ config ตาม *version* ของ component นั้น, รู้ว่า API update = draft หรือ live, partial update ต้องส่ง field ที่ไม่อยากให้หาย
+- **กฎ:** เป็นกรณีเฉพาะของ AGENTS.md §Quality standards "ก่อน deploy/publish ต้อง validate เสมอ + ดู execution log" — เพิ่มเติม: เช็ค format ของ config ตาม *version* ของ component นั้น, รู้ว่า API update = draft หรือ live, partial update ต้องส่ง field ที่ไม่อยากให้หาย
 - **วิธีใช้:** แก้ทีละชิ้น → validate (tool ของ platform) → ดู execution จริง → ค่อยไปชิ้นถัดไป · node ที่เรียก API ภายนอกใส่ retry
 
 ---
 
 ## B. Git & publishing
 
-**B1. เปิด PR เสมอ — ห้าม push ตรงเข้า default branch** *(promoted → CLAUDE.md)*
+**B1. เปิด PR เสมอ — ห้าม push ตรงเข้า default branch** *(promoted → AGENTS.md)*
 - **ปัญหา:** งาน self-merge ที่ review แล้ว ถูก fast-forward เข้า default branch ตรง ๆ → ไม่มี record, ไม่ผ่าน CI gate
 - **กฎ:** push feature branch → เปิด PR → merge → แล้วค่อย deploy · แม้ self-merge งานตัวเอง
 - **วิธีใช้:** ใช้ CLI ของ git host ที่มี auth ของตัวเอง (เช่น `gh`) · CLI ยังไม่ login → ขอให้ user รัน login เอง **ห้ามจับ token** (ดู B3)
 
-**B2. ห้ามข้อมูลลับ/ภายในใน PR, commit, หรืออะไรที่ push ออกไป** *(promoted → CLAUDE.md)*
+**B2. ห้ามข้อมูลลับ/ภายในใน PR, commit, หรืออะไรที่ push ออกไป** *(promoted → AGENTS.md)*
 - **ปัญหา:** PR description เล่ารายละเอียดกลไก auth, role ของ DB, จำนวน user, ขั้นตอน apply บน prod — push ขึ้น git host = publish ออกภายนอก และ force-push ไม่ได้ลบ commit เก่าจริง (ยังเข้าถึงได้ด้วย SHA จนกว่าจะ GC) แม้ repo private ก็เห็นโดย collaborator/integration ทุกตัว
 - **กฎ:** PR body / commit message = 2-4 บรรทัด บอก *อะไรเปลี่ยน* ระดับสูง + "รายละเอียดใน internal spec" · ห้าม PII, กลไก security/auth, รายละเอียด infra/role/credential, ตัวเลขข้อมูลจริง, runbook ของ prod
 - **วิธีใช้:** ของละเอียดอยู่ใน private memory / spec ในเครื่องเท่านั้น · sanitize ย้อนหลัง → แก้ทั้ง PR body + commit message + comment ในโค้ด แล้วบอก user ว่า commit เดิมอาจยังค้างบน host ด้วย SHA
 
 **B3. Token ห้ามผ่านมือ session**
 - **ปัญหา:** คำสั่งที่พิมพ์ git credential ออก stdout ถูกรันทุกครั้งที่เปิด PR ผ่าน REST → token เดียวกันรั่วเข้า session transcript นับร้อย ต้อง revoke
-- **กฎ:** session ไม่ fetch/พิมพ์ token เอง · ใช้ tool ที่ถือ auth เอง (git credential helper ภายใน `git push`, CLI ที่ login แล้ว) · ปิดคำสั่งที่พ่น secret ด้วย `permissions.deny`
+- **กฎ:** session ไม่ fetch/พิมพ์ token เอง · ใช้ tool ที่ถือ auth เอง (git credential helper ภายใน `git push`, CLI ที่ login แล้ว) · ปิดคำสั่งที่พ่น secret: Claude Code = `permissions.deny` ใน `settings.json`; Codex = sandbox + approval policy (ให้คำสั่งนอก workspace ต้องขออนุมัติ, role ที่ไม่ต้องเขียนใช้ `sandbox_mode = "read-only"`) และห้ามใส่คำสั่งที่พ่น secret ไว้ใน skill/brief
 - **วิธีใช้:** ต้องการ secret ใหม่ → ให้ user ใส่เอง (ดู C3)
 
 **B4. เก็บกวาดของเหลือตอน ship ไม่ใช่ "ทีหลัง"**
@@ -81,8 +81,8 @@
 
 **C1. ห้ามเปิด memory file ด้วย truncating write**
 - **ปัญหา:** script อัปเดต memory เปิดไฟล์แบบ write mode (`open(path, 'w')` ตัดไฟล์เหลือ 0 *ก่อน* เขียน) แล้ว encode พังกลางทาง → ไฟล์เหลือ 0 byte เนื้อหาเดิมหาย · เกิดซ้ำอีกครั้งตอนหลาย session แก้ไฟล์เดียวกัน
-- **กฎ:** เขียนไฟล์ temp ใน directory เดียวกันแล้ว atomic rename (`os.replace`) หรือใช้ Write/Edit tool · ห้าม escape lone surrogate (`\udXXX`) ใน Python — ใช้ `\U0001XXXX`
-- **วิธีใช้:** safety net = `hooks/memory-guard.js` (shadow + restore ไฟล์ 0 byte) · stdout ของ PostToolUse hook **ไม่ขึ้นให้ session เห็นเสมอ** → memory file ดูบางผิดปกติ ให้เปิด `~/.claude/backups/memory-shadow/_restores.log` · heredoc ใส่ `python -` พังเรื่อง quote → เขียน script เป็นไฟล์แล้วรัน อย่าสู้กับ quoting
+- **กฎ:** เขียนไฟล์ temp ใน directory เดียวกันแล้ว atomic rename (`os.replace`) หรือใช้ file-edit tool ของ agent เอง (Claude Code: Write/Edit) · ห้าม escape lone surrogate (`\udXXX`) ใน Python — ใช้ `\U0001XXXX`
+- **วิธีใช้:** safety net = `hooks/memory-guard.js` (shadow + restore ไฟล์ 0 byte) · ใน Claude Code stdout ของ PostToolUse hook **ไม่ขึ้นให้ session เห็นเสมอ** (Codex: guard ส่ง notice เป็น `additionalContext` แต่ log ยังเป็นหลักฐานหลัก) → memory file ดูบางผิดปกติ ให้เปิด `<agent home>/backups/memory-shadow/_restores.log` · heredoc ใส่ `python -` พังเรื่อง quote → เขียน script เป็นไฟล์แล้วรัน อย่าสู้กับ quoting
 
 **C2. หา ruling/artifact เก่าก่อน derive ใหม่**
 - **ปัญหา:** งาน mapping ที่ user เคยตัดสินไปแล้วถูกทำใหม่จากศูนย์ เพราะไฟล์ ruling เก่าอยู่ใน scratchpad ของ session ก่อน ไม่ใช่ในโฟลเดอร์ project → ถาม user ซ้ำในเรื่องที่ตอบไปแล้ว
@@ -129,5 +129,5 @@
 
 **E2. Design-lessons registry — อ่านก่อนออกแบบ ไม่ใช่หลัง ship**
 - **ปัญหา:** ความผิดพลาด *แบบเดียวกัน* ship ซ้ำหลายรอบในหลาย feature/หลาย app เพราะบทเรียนกระจายอยู่ใน PR/handoff
-- **กฎ:** รวม root-cause *class* ที่เกิดซ้ำ + กฎที่กันมันไว้ในไฟล์เดียว (`feedback-design-lessons.md`) จัดหมวด (forms, lifecycle, notifications, errors, schema/RLS, authz, money, platform …) · อ่านใน phase design ก่อน lock plan ทุกครั้ง (`/fable-5` Phase 2)
+- **กฎ:** รวม root-cause *class* ที่เกิดซ้ำ + กฎที่กันมันไว้ในไฟล์เดียว (`feedback-design-lessons.md`) จัดหมวด (forms, lifecycle, notifications, errors, schema/RLS, authz, money, platform …) · อ่านใน phase design ก่อน lock plan ทุกครั้ง (skill `orchestrated-loop` Phase 2)
 - **วิธีใช้:** เพิ่มเฉพาะเมื่อเป็น *class* และมี incident อ้างอิง · ≤ 5 บรรทัดต่อข้อ · ห้าม prune ว่า YAGNI — ทุกข้อคือหลักฐานของความจำเป็นจริง · ดูรูปแบบที่ `../examples/memory/feedback-design-lessons.md`

@@ -1,0 +1,58 @@
+# SESSION-BOARD
+
+> Inter-session board: **locks + intent + handoffs only** - never completion narrative (durable state goes to `MEMORY.md` / `project-*.md`).
+> Read it at the start of any multi-session work. On every open: prune rows older than 3 days (verify first - an old row is suspect, not a lock). Budget <= 6 KB (HANDOFF QUEUE not counted).
+> Rules: global AGENTS.md, Inter-session coordination. Rationale: docs/03-inter-session.md.
+> Every section starts EMPTY. The format and a fictional example for each section sit inside an HTML comment - they are not live state.
+
+## IN-FLIGHT
+
+Work in progress on a shared resource = a lock. Add the row BEFORE you start; delete it the moment you finish. Another session's row = do not touch that resource (leave a MESSAGE instead).
+
+<!-- Example (copy the header row with your first row):
+| owner (session) | since | resource / work | worktree / branch |
+|---|---|---|---|
+| web-session | 2026-01-15 | acme-erp: invoice status migration | ../acme-erp-invoice / feat/invoice-status |
+-->
+
+## RESERVATIONS
+
+Collidable identifiers (migration timestamps, branch names) taken before use. Take NEXT FREE, then bump it.
+
+<!-- Example:
+- NEXT FREE migration timestamp: 20260115120100
+- 20260115120000 - web-session - add_invoice_status (2026-01-15)
+-->
+
+## DEPLOY LOCK
+
+One rebuild of a shared container/host at a time. ACTIVE empty -> put yourself there and deploy; ACTIVE taken -> add yourself to WAITING and do not deploy. ACTIVE pulls the latest default branch before building (piggyback: a WAITING entry whose commit is already in that image deletes itself). Delete ACTIVE as soon as the health check passes; ACTIVE older than 15 min -> verify container status before stealing. Migrations use RESERVATIONS, not this lock.
+
+<!-- Example:
+- ACTIVE: web-session 2026-01-15 14:05 UTC - acme-erp frontend @ abc1234
+- WAITING: erp-session 2026-01-15 14:09 UTC - acme-erp frontend @ def5678
+-->
+
+## HANDOFF QUEUE
+
+Facts this session changed in a file it does not own - one line each, written BEFORE deleting your IN-FLIGHT row. A fact sentence, not a resource label. Folded only by `memory-save` of the target file, and deleted in that same edit (delete-iff-folded). Exempt from the 3-day prune and the budget; entries older than 14 days -> flag to the user.
+
+<!-- Example:
+-> project-acme-erp.md :: migration add_invoice_status applied on prod; the old status column was dropped  [from web-session 2026-01-15]
+-->
+
+## CONTRACTS
+
+Interface agreements between sessions (shared schema, API shapes, event names) that both sides build against.
+
+<!-- Example:
+- acme-erp `invoices.status` = draft | issued | paid | void - agreed by web-session + erp-session (2026-01-15)
+-->
+
+## MESSAGES
+
+Notes for another session - use instead of touching a resource it has locked.
+
+<!-- Example:
+- to erp-session from web-session (2026-01-15): need a read-only invoices view for the web app; please add it after your RLS change.
+-->

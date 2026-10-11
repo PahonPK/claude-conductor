@@ -1,0 +1,58 @@
+# AGENTS.md - <Project Name>
+
+> One-line summary of what this project is.
+> Codex loads this file automatically (trusted projects). For Claude Code, add a one-line
+> `CLAUDE.md` next to it containing exactly: `@AGENTS.md`
+> Keep it small: Codex reads at most 32 KiB of project docs in total.
+
+---
+
+## Project Overview
+- **Workspace:** <name>
+- **Repo:** <url>
+- **Local path:** <path>
+
+## Tech Stack
+| Layer | Tech |
+|---|---|
+| ... | ... |
+
+## Quality / Code rules
+- (project-specific style + conventions)
+
+## Merge hygiene (optional - only if several sessions / PRs work this repo in parallel)
+- Derived / generated files (<GENERATED_FILES>, e.g. lockfile, generated types, pin/snapshot files)
+  are regenerated after merge, never hand-merged. If one conflicts, take the base side first,
+  then regenerate (<REGEN_CMD>) and commit the result. Files where both sides add entries
+  (e.g. type definitions) keep BOTH sides' additions; prove it with <TYPECHECK_CMD>.
+- After merging the base branch, check that no two PRs redefined the same object (e.g. the
+  same DB function replaced in two migrations) - if so, stop and reconcile.
+- Sibling PRs cut from one base merge in their apply order, each stacked on the previous PR's
+  resolved head (never re-resolve the same conflict twice).
+- Merge the base branch into your branch before opening its PR; aim to merge within ~3 days of branching.
+- No PR appends to a shared single-line registry (e.g. one long `"test"` script line) - derive it
+  instead (a runner that discovers `*.test.*` files), so a PR only adds files.
+
+## Memory Persistence
+**Memory file:** `{{MEMORY_DIR}}/project-<name>.md`
+**Workspace context:** `{{AGENT_HOME}}/workspaces/<workspace>/AGENTS.md`
+
+**Save memory IMMEDIATELY on:**
+- (milestone 1)
+- (milestone 2)
+- ...
+
+**Verify recipe** (run if `Last verified` > 5 days old or its commit != HEAD):
+```bash
+# (3-7 read-only commands specific to this project - see MEMORY_SCHEME.md for stack examples)
+```
+
+Skills: `memory-save` / `memory-recall` (Claude Code: `/memory-save`; Codex: `$memory-save`).
+
+<!--
+Required sections (per the global AGENTS.md, "Per-project AGENTS.md"):
+1. Stack - language/framework/version
+2. Project-specific output / code / review rules
+3. Stack-specific conventions
+4. Memory Persistence (path + save triggers + verify recipe)
+-->

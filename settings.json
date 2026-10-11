@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" PreCompact",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-checkpoint.js\" PreCompact --agent claude",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" SessionEnd",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-checkpoint.js\" SessionEnd --agent claude",
             "timeout": 10
           }
         ]
@@ -30,12 +30,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-checkpoint.js\" SessionStart",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-checkpoint.js\" SessionStart --agent claude",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-guard.js\"",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-guard.js\" SessionStart --agent claude",
             "timeout": 10
           }
         ]
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"<YOUR_HOME>\\\\.claude\\\\hooks\\\\memory-guard.js\"",
+            "command": "node \"{{AGENT_HOME}}/hooks/memory-guard.js\" PostToolUse --agent claude",
             "timeout": 10
           }
         ]
