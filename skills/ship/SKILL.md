@@ -41,8 +41,10 @@ The global AGENTS.md (orchestrator workflow) and the project AGENTS.md (verify r
 
 ## 5. Deploy -> prod
 
+- **Right before acquiring DEPLOY LOCK** (and before any other live action - migration apply, server `git pull`), re-read the WHOLE §DEPLOY LOCK block of `{{MEMORY_DIR}}/SESSION-BOARD.md`, SCHEDULED and every line named ACTIVE included - never a grep for one line (e.g. `sed -n '/DEPLOY LOCK/,/^## /p' "{{MEMORY_DIR}}/SESSION-BOARD.md"`).
+- A SCHEDULED freeze covers this change -> **stop and tell the owner**; wait for its CLOSED note. The owner's go for this ship does not override a freeze another session booked.
+- A container/host shared by several sessions -> then acquire §DEPLOY LOCK (see `{{AGENT_HOME}}/docs/03-inter-session.md`).
 - Run `<DEPLOY_CMD>` per the deploy recipe in the project AGENTS.md.
-- A container/host shared by several sessions -> check and acquire `SESSION-BOARD.md` §DEPLOY LOCK first (see `{{AGENT_HOME}}/docs/03-inter-session.md`).
 
 ## 6. Browser-verify on LIVE (not verified = not done)
 

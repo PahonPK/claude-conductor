@@ -11,7 +11,7 @@ The standard brainstorm -> build loop, but **every phase runs in a fixed role**:
 
 | Role | Does | Claude Code (Agent tool) | Codex (custom agents) |
 |---|---|---|---|
-| **planner** | analyze, architect, plan, decide go/no-go | main thread running Fable 5, else Agent `model: fable` | `planner` (gpt-6-astra, high, read-only) |
+| **planner** | analyze, architect, plan, decide go/no-go | main thread running Fable 5.1 (`claude-fable-5-1`), else Agent `model: fable` | `planner` (gpt-6-astra, high, read-only) |
 | **heavy worker** | complex code reading, tier-2 coding | Agent `model: opus` (Opus 5.5) | `worker-heavy` (gpt-6.1-sol, high) |
 | **light worker** | gathering, mechanical ops, comms, tier-1 coding | Agent `model: sonnet` | `worker-light` (gpt-6-luna, medium) |
 | **reviewer** | final review; a different agent from the author | Agent `model: opus` (fresh agent) | `reviewer` (gpt-6-astra, high, read-only); built-in `/review` as fallback |
@@ -52,6 +52,7 @@ Model names are the maintainer's set - swap in what your account has. The princi
 - **Read the design-lessons registry before designing** - `{{MEMORY_DIR}}/feedback-design-lessons.md` (shape: `examples/memory/feedback-design-lessons.md` in the framework repo; principle: `{{AGENT_HOME}}/docs/06-lessons-learned.md` §E2). Every plan that touches UI / document lifecycle / notifications / client writes / schema / money / auth is checked against it, and the file goes into the brief of a spawned planner too. No file yet -> start from the example and add entries after real incidents.
 - Output humans read (bot messages / documents / UI copy / report layouts) -> show a fully rendered sample with realistic data and get the user's OK before delegating the build (`{{AGENT_HOME}}/docs/06-lessons-learned.md` A4).
 - Digest findings -> find tensions/risks/edge cases -> design the architecture -> write the plan as clearly scoped phases.
+- The plan changes a shared convention (helper function, naming/sequence scheme, seed set, where a table/RPC lives) -> it ships three things in one PR: (1) an inventory of dependents + their fixes, (2) the instruction file (project AGENTS.md / rules doc) updated in the same PR, (3) a CI gate that fails on NEW uses, with a frozen allowlist that may only shrink (`{{AGENT_HOME}}/docs/06-lessons-learned.md` B5).
 - **Confirm the plan with the user before building** (orchestrator step 3 - wait for the go word, e.g. "go" / "ไปเลย").
 - Touching a shared resource -> READ `SESSION-BOARD.md` and lock first (migration timestamp / branch / shared table or RLS / DB function).
 

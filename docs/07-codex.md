@@ -23,7 +23,7 @@
 | Skills | `~/.claude/skills/<name>/SKILL.md` → เรียก `/name` | `~/.agents/skills/<name>/SKILL.md` (home จริง ไม่ใช่ `CODEX_HOME`) → เรียก `$name` หรือเลือกจาก `/skills` (หรือ Codex เลือกเองจาก description) |
 | Slash command เดิม (`commands/`) | ย้ายเป็น skills แล้ว | custom prompts (`~/.codex/prompts`) ถูกถอดออกจาก Codex แล้ว → skills เท่านั้น |
 | Subagents | Agent tool + pin `model:` ทุกครั้ง | custom agents ใน `~/.codex/agents/*.toml` — Codex spawn subagent **เมื่อถูกสั่งเท่านั้น** (`AGENTS.md` / skill เป็นคนสั่ง) |
-| Role → model | planner = Fable 5 · heavy worker + reviewer = Opus 5.5 · light worker = Sonnet | `planner` + `reviewer` = gpt-6-astra (high, read-only) · `worker-heavy` = gpt-6.1-sol (high) · `worker-light` = gpt-6-luna (medium) |
+| Role → model | planner = Fable 5.1 · heavy worker + reviewer = Opus 5.5 · light worker = Sonnet | `planner` + `reviewer` = gpt-6-astra (high, read-only) · `worker-heavy` = gpt-6.1-sol (high) · `worker-light` = gpt-6-luna (medium) |
 | Review step | reviewer agent (`model: opus`) ตัวใหม่ | agent `reviewer` หรือ built-in `/review` |
 | Worktree | `EnterWorktree` (หลัง `git fetch`) | `git fetch` → `git worktree add ../<repo>-<task> -b <branch> origin/<default>` → เปิด `codex` ใน dir นั้น |
 | เขียน memory นอก repo | ผ่าน permission ปกติของ Claude Code | sandbox `workspace-write` เขียนได้แค่ workspace + temp → ต้องเพิ่ม memory dir ใน `writable_roots` (หรือ `codex --add-dir`) |
