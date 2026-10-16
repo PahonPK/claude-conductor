@@ -2,7 +2,7 @@
 
 > บทเรียนจากการใช้ framework นี้ทำงานจริงหลายเดือนใน private instance ของ maintainer —
 > ถอดชื่อ/วันที่/ระบบจริงออกหมด เหลือแค่ **ปัญหา → กฎ → วิธีใช้**
-> *(Last updated: 2026-10-09)*
+> *(Last updated: 2026-10-16)*
 >
 > ใน private instance แต่ละข้อคือ **feedback memory file** หนึ่งไฟล์
 > (`<memory dir>/feedback-<topic>.md` — ดูรูปแบบที่
@@ -75,6 +75,16 @@
 - **กฎ:** session ที่เปิดอะไรไว้ เป็นคนปิดเอง: branch merge + verify แล้ว → `git worktree remove` + `git worktree prune` + ลบ local branch **ก่อน**เขียนสรุป
 - **วิธีใช้:** ลบไม่ได้ (เช่น Windows ล็อกไฟล์) → บอกใน summary + ใส่ pending 1 บรรทัดใน project memory · sweep เป็นระยะด้วย `git worktree list` + `git branch --merged` · rollback image เก็บแค่ไม่กี่ตัวล่าสุด · scratchpad ของ session ทิ้งได้ แต่ไฟล์ใน home/repo ไม่ได้
 
+**B5. เปลี่ยน shared convention = ship 3 อย่างใน PR เดียว**
+- **ปัญหา:** shared convention เปลี่ยน (helper ตรวจสิทธิ์ตัวเดิมถูกแทนด้วย check ที่อิง matrix) — ทำ inventory ของ dependent แล้วแก้ครบ แต่ 4 วันต่อมา table **ใหม่** copy policy ของ table ข้าง ๆ ที่ยังเป็นแบบก่อนเปลี่ยน แล้ว ship ไปพร้อม gate เก่า. inventory ที่ทำตอนเปลี่ยนจับ code ที่ยังไม่เกิดไม่ได้
+- **กฎ:** convention change ship ใน PR เดียวพร้อม (1) inventory ของ dependent + แก้ครบ (2) instruction file (project `AGENTS.md` / rules doc) อัปเดตใน PR เดียวกัน (3) CI gate ที่ fail เมื่อมีการใช้แบบเก่า**ที่เพิ่มใหม่** พร้อม allowlist ที่ freeze ไว้และหดได้อย่างเดียว (entry ที่ stale ก็ทำให้ fail)
+- **วิธีใช้:** gate replay history ไปถึง definition **ปัจจุบัน** ของแต่ละ object (`CREATE OR REPLACE` / policy ตัวล่าสุดชนะ) ไม่ใช่ตัวแรก · allowlist entry ระบุว่าใคร rule และเมื่อไร · ใช้กับ helper function, naming/sequence scheme, seed set, ที่อยู่ของ table/RPC · skill `orchestrated-loop` Phase 2 เช็คข้อนี้ในแผน
+
+**B6. อ่าน lock ทั้ง block ใหม่ก่อน live action ทุกครั้ง** *(promoted → AGENTS.md §Inter-session)*
+- **ปัญหา:** session หนึ่งเช็ค deploy lock โดยอ่านแค่บรรทัด "ACTIVE (max 1)" ซึ่ง release แล้ว — ไม่เห็นบรรทัด SCHEDULED + บรรทัด ACTIVE ที่ตั้งชื่อพิเศษอีกบรรทัด แล้ว apply migration + pull tree บน server กลาง freeze window ของ key rotation ที่ owner อนุมัติให้อีก session. ไม่เสียหาย แต่เป็น protocol breach
+- **กฎ:** ก่อน live action ทุกชนิด (rehearsal ที่ rollback, apply migration, `git pull` บน server, build/deploy) อ่าน §DEPLOY LOCK ใหม่**ทั้ง block** ไม่ใช่ grep บรรทัดเดียว · owner go ของงาน A ไม่ใช่ใบอนุญาตให้ฝ่า freeze ของ B
+- **วิธีใช้:** `sed -n '/DEPLOY LOCK/,/^## /p' SESSION-BOARD.md` ทันทีก่อนลงมือ (ไม่ใช่ตอนเริ่ม session) · freeze ครอบงาน → บอก owner แล้วรอ CLOSED · รายละเอียด `03-inter-session.md` §5
+
 ---
 
 ## C. Memory & files
@@ -103,6 +113,11 @@
 - **ปัญหา:** เวลาจาก clock ในเครื่อง (local timezone) ถูกเขียนลง memory/board/plan เป็น "UTC" → ต้องแก้หลายไฟล์ และ session ถัดไปที่เทียบกับ `created_at` ใน DB (UTC จริง) จะสรุปลำดับเหตุการณ์ผิด
 - **กฎ:** ก่อนเขียน timestamp ถามว่ามาจาก clock ไหน · local → เขียนพร้อมชื่อ timezone จริง (`HH:MM UTC (HH:MM <local TZ>)`) · ห้ามเรียกเวลา local ว่า UTC
 - **วิธีใช้:** anchor "applied/deployed at" ด้วย clock ของ server/DB (`date -u`, `now() at time zone 'utc'`) ในคำสั่งเดียวกับที่ทำงาน · cross-check: stamp "UTC" ที่ห่างจาก `…Z` ของ git host/server เท่ากับ offset ของ local TZ พอดี = จริง ๆ เป็น local
+
+**C6. Memory/doc บันทึกเฉพาะสิ่งที่ map ตอบไม่ได้** *(promoted → AGENTS.md §Memory protocol)*
+- **ปัญหา:** เอกสาร architecture ที่เขียนมือบอกว่า project มี migration 11 ไฟล์ ขณะที่ repo จริงมีหลายร้อย และเอกสาร "common mistakes" สอน pattern RLS ที่ codebase ไม่เคยใช้เลย — agent เชื่อทั้งสองอย่าง
+- **กฎ:** memory และเอกสารที่เขียนมือ บันทึกเฉพาะสิ่งที่คำนวณจาก code ไม่ได้ (decision, เหตุผล, ruling ของ owner, pending work) · อะไรที่ derive ได้ (จำนวน, list, definition ล่าสุดของ function/policy) ห้ามเขียนลง — เขียน*คำสั่งที่หาคำตอบ*แทน แบบเดียวกับ verify recipe
+- **วิธีใช้:** เก็บ rule + เหตุผลไว้ใน doc; ทุก count/list/"definition ล่าสุด" แทนด้วยคำสั่งหรือไฟล์ที่ derive มัน (pins/registry file, grep pattern, catalog query) · จับได้ว่ากำลังจะพิมพ์ตัวเลข → พิมพ์คำสั่งแทน · ตาราง "Where to look" ใน `../templates/project-AGENTS.md.template`
 
 ---
 

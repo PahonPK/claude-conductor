@@ -20,6 +20,16 @@
 ## Quality / Code rules
 - (project-specific style + conventions)
 
+## Where to look (optional)
+This table exists so the agent asks the map before walking the tree, and so nobody writes the answer into a doc.
+
+| Question | Ask the map |
+|---|---|
+| Newest definition of a DB function / policy | <REGISTRY_FILE or REPLAY_SCRIPT> |
+| Who calls an RPC / endpoint | `<GREP_PATTERN>` |
+| Navigation / menu entries | <NAV_SOURCE_FILE> |
+| Counts (migrations, pages, tests) | `<COUNT_CMD>` - the command, never the number |
+
 ## Merge hygiene (optional - only if several sessions / PRs work this repo in parallel)
 - Derived / generated files (<GENERATED_FILES>, e.g. lockfile, generated types, pin/snapshot files)
   are regenerated after merge, never hand-merged. If one conflicts, take the base side first,

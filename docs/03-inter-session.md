@@ -5,7 +5,7 @@
 >
 > `AGENTS.md` เก็บแค่ **กฎ** (rules-only, โหลดทุก session) — เอกสารนี้คือ **เหตุผล + ตัวอย่าง +
 > incident** เบื้องหลังกฎเหล่านั้น อ่านเมื่อกฎดูไม่มีเหตุผล หรือเจอ edge case ที่กฎไม่ครอบ
-> *(Last updated: 2026-10-09)*
+> *(Last updated: 2026-10-16)*
 
 ---
 
@@ -130,14 +130,41 @@ server พร้อมกัน — คำสั่ง recreate ของ sessio
 
 | กฎ | ทำไม |
 |---|---|
-| ก่อน build/up container ที่ share → เช็ค §DEPLOY LOCK; ACTIVE ว่าง → ใส่ตัวเองเป็น ACTIVE แล้ว deploy | 1 container = 1 rebuild ต่อครั้ง |
+| ก่อน build/up container ที่ share → อ่าน §DEPLOY LOCK ทั้ง block (รวม SCHEDULED — ดูหัวข้อถัดไป); ACTIVE ว่าง → ใส่ตัวเองเป็น ACTIVE แล้ว deploy | 1 container = 1 rebuild ต่อครั้ง |
 | มี ACTIVE อยู่ → **ห้าม deploy**, เพิ่มตัวเองใน WAITING | กัน race ข้างบน |
 | **Piggyback:** ACTIVE pull default branch ล่าสุดก่อน build → ทุก PR ที่ merge แล้วขึ้น live ใน image เดียว; WAITING ที่ commit อยู่ใน image แล้ว → ลบ row ตัวเองได้เลย | rebuild ซ้ำ = วิ่ง race ใหม่โดยไม่ได้อะไร — WAITING ส่วนใหญ่จึงเป็น no-op |
 | health check ผ่าน (app ตอบแล้ว เช่น `curl` ได้ redirect/200) → **ลบ ACTIVE row ทันที** | lock ค้าง = บล็อกคนอื่นฟรี ๆ |
 | ACTIVE row ค้าง > 15 นาที → verify (container status / health check) ก่อน steal | row เก่าขนาดนี้น่าจะเป็น session ที่ตายแล้ว มากกว่า build ที่ช้า |
 | lock คุมแค่ container rebuild — migration ยังจองผ่าน §RESERVATIONS | คนละ resource |
 
-> ไม่มี deploy target ที่หลาย session ใช้ร่วมกัน (เช่น deploy ผ่าน CI/hosting ที่ queue ให้อยู่แล้ว) → ไม่ต้องมี section นี้
+> ไม่มี deploy target ที่หลาย session ใช้ร่วมกัน (เช่น deploy ผ่าน CI/hosting ที่ queue ให้อยู่แล้ว) → ไม่ต้องมี ACTIVE/WAITING
+> (บรรทัด SCHEDULED ข้างล่างยังใช้จอง freeze ได้ ถ้า owner ต้องการ)
+
+### SCHEDULED — freeze window ที่ owner จองไว้
+
+**SCHEDULED** = บรรทัดใน §DEPLOY LOCK ที่ owner จอง **freeze window** ไว้กับ session หนึ่ง แบบเฉพาะกิจ
+(ไม่ใช่ปฏิทินประจำ): ช่วงเวลา + timezone · อะไรถูก freeze · ใครจอง · เหตุผล — บรรทัดนี้อยู่จนกว่าจะมี note **CLOSED**
+
+```
+- SCHEDULED: <from>-<to> <tz> · frozen: <what> · booked by <session/owner> · reason · post CLOSED when over
+- SCHEDULED: 2026-01-20 22:00-23:30 UTC · frozen: migrations, server tree, deploys · booked by ops-session for the owner · key rotation · post CLOSED when over
+```
+
+**Incident (เกิดจริงใน private instance):** owner อนุมัติ freeze window ให้อีก session ทำ key rotation และจองไว้เป็น
+SCHEDULED บน board. session หนึ่งที่ได้ owner go สำหรับงานของตัวเอง เช็ค lock ด้วยการอ่าน**บรรทัดเดียว** —
+บรรทัด "ACTIVE (max 1)" ซึ่ง release แล้ว — จึงไม่เห็นบรรทัด SCHEDULED และบรรทัด ACTIVE ที่ตั้งชื่อพิเศษอีกบรรทัด
+แล้ว apply migration + `git pull` tree บน server **กลาง freeze**. ไม่มีความเสียหาย แต่เป็น protocol breach
+
+| กฎ | ทำไม |
+|---|---|
+| ก่อน **live action ทุกชนิด** (rehearsal ที่ rollback, apply migration, `git pull` บน server, build/deploy image) → อ่าน §DEPLOY LOCK ใหม่**ทั้ง block** เช่น `sed -n '/DEPLOY LOCK/,/^## /p' SESSION-BOARD.md` — SCHEDULED + ทุกบรรทัดที่ชื่อ ACTIVE (มีแบบตั้งชื่อพิเศษได้) | **อ่าน block ไม่ใช่บรรทัด** — grep บรรทัดเดียวเจอแค่บรรทัดที่หา; freeze อยู่บรรทัดอื่น |
+| อ่าน**ทันทีก่อนลงมือ** ไม่ใช่ตอนเริ่ม session | freeze ถูกจองระหว่างวันได้ |
+| freeze ครอบงานเรา → บอก owner แล้วรอ CLOSED | **owner go ของงาน A ไม่ใช่ใบอนุญาตให้ฝ่า freeze ของ B** — go ตอบเรื่องงาน A เท่านั้น ไม่ได้ยกเลิก freeze ที่จองไว้ให้ B |
+| ไม่มี freeze ตามปฏิทินแบบ default — owner จอง SCHEDULED เองเมื่อช่วงไหนเสี่ยง | ดูข้างล่าง |
+
+> **พิจารณาแล้วไม่ทำ:** freeze ตามปฏิทินแบบ default (เช่น ช่วงปิดงวดทุกเดือน) และ section FREEZE แยก — ตัดทิ้งตามหลัก
+> YAGNI เพราะไม่มี incident ที่ชี้ว่าจำเป็น (incident ข้างบนคือการอ่าน block ไม่ครบ ไม่ใช่การขาดปฏิทิน). ช่วงไหนเสี่ยง
+> → owner จอง SCHEDULED ตอนนั้น
 
 ---
 
@@ -155,7 +182,7 @@ Codex: `~/.codex/conductor-memory/`) ใช้จองของกลางท�
 |---|---|
 | **IN-FLIGHT** | งานที่กำลังทำอยู่ (owner + วันที่) — = **lock** |
 | **RESERVATIONS** | resource ที่จองไว้ (migration timestamp, branch) |
-| **DEPLOY LOCK** | ACTIVE (ใครกำลัง rebuild container ที่ share) + WAITING — ดูข้อ 5 |
+| **DEPLOY LOCK** | ACTIVE (ใครกำลัง rebuild container ที่ share) + WAITING + SCHEDULED (freeze window ที่ owner จอง) — ดูข้อ 5 |
 | **HANDOFF QUEUE** | fact ที่ session หนึ่งเปลี่ยน แต่ไฟล์ canonical เป็นของ project อื่น — รอ fold |
 | **CONTRACTS** | ข้อตกลง interface/contract ระหว่าง session (เช่น schema ที่ตกลงร่วมกัน) |
 | **MESSAGES** | ข้อความฝากถึง session อื่น |
