@@ -70,6 +70,8 @@ hook inject ได้แค่ "header" — **การอ่านจริง�
 - **ระบบเตือนว่า compaction ใกล้มา → save ทันที** ก่อนทำ task อื่น
 - State เปลี่ยนแบบ meaningful → update one-liner ใน `MEMORY.md` index ด้วย
 
+> **หลัก: memory บันทึกเฉพาะสิ่งที่ map ตอบไม่ได้** — เก็บ decision, เหตุผล, ruling ของ owner, pending work; อะไรที่คำนวณจาก code ได้ (จำนวน, list, definition ล่าสุดของ function/policy) ไม่เขียนลง — เขียนคำสั่งที่หาคำตอบแทน แบบ verify recipe (ที่มา: `06-lessons-learned.md` C6)
+
 Skills (เรียก: Claude `/memory-save` · Codex `$memory-save` หรือเลือกจาก `/skills`):
 - **`memory-save`** — อัปเดต memory file ด้วย state ปัจจุบัน (curate จากบทสนทนา + daily log ถ้ามี
   (Claude เท่านั้น); แสดง diff ให้ confirm) — **targeted edit เฉพาะส่วนที่เปลี่ยน ไม่ rewrite ทั้งไฟล์**;

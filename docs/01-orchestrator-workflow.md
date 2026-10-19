@@ -64,7 +64,7 @@ workflow เต็ม; งานที่ mechanical / read-only / reversible �
 | Phase | Role | Claude Code | Codex |
 |---|---|---|---|
 | Gather (เก็บ fact / probe ตามสูตร) | light worker — ใช้ heavy เฉพาะต้อง trace code ซับซ้อน | Sonnet | `worker-light` (gpt-6-luna) |
-| Analyze / architect / plan / go-no-go | planner — **คิดอย่างเดียว ไม่ลงมือ** | Fable 5 | `planner` (gpt-6-astra) |
+| Analyze / architect / plan / go-no-go | planner — **คิดอย่างเดียว ไม่ลงมือ** | Fable 5.1 | `planner` (gpt-6-astra) |
 | Code tier 1 (มี deterministic gate ครอบ) | light worker | Sonnet | `worker-light` |
 | Code tier 2 (DB function / RLS / money logic / cross-file refactor / ไม่แน่ใจ) | heavy worker | Opus 5.5 | `worker-heavy` (gpt-6.1-sol) |
 | Final review (คนละตัวกับคนเขียน, judge ≥ answerer) | reviewer | Opus 5.5 (agent ใหม่) | `reviewer` (gpt-6-astra) หรือ `/review` |
